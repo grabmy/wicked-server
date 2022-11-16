@@ -105,14 +105,36 @@ eval("\nmodule.exports = {\n\tstdout: false,\n\tstderr: false\n};\n\n\n//# sourc
 
 /***/ }),
 
-/***/ "./src/Wicked.ts":
-/*!***********************!*\
-  !*** ./src/Wicked.ts ***!
-  \***********************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ "./src/classes/Core.ts":
+/*!*****************************!*\
+  !*** ./src/classes/Core.ts ***!
+  \*****************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"Wicked\": () => (/* binding */ Wicked)\n/* harmony export */ });\nvar chalk = __webpack_require__(/*! chalk */ \"./node_modules/chalk/source/index.js\");\r\nvar error = chalk.bold.red;\r\nvar Wicked = /** @class */ (function () {\r\n    function Wicked() {\r\n        this.create();\r\n    }\r\n    Wicked.prototype.create = function () {\r\n        this.criticalError(\"I'm not a teapot\");\r\n    };\r\n    Wicked.prototype.criticalError = function (message) {\r\n        console.log(error(\"Critical error: \" + message));\r\n    };\r\n    Wicked.prototype.start = function () {\r\n        this.core.start();\r\n    };\r\n    Wicked.prototype.stop = function () {\r\n        this.core.stop();\r\n    };\r\n    return Wicked;\r\n}());\r\n\r\n\n\n//# sourceURL=webpack://wicked-server/./src/Wicked.ts?");
+eval("\r\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\r\nconst Tools_1 = __webpack_require__(/*! ./Tools */ \"./src/classes/Tools.ts\");\r\nconst chalk = __webpack_require__(/*! chalk */ \"./node_modules/chalk/source/index.js\");\r\nclass Core {\r\n    constructor() {\r\n        // True is the server has started\r\n        this.hasStarted = false;\r\n        // True if reality is a simulation\r\n        this.isSimulated = false;\r\n        this.hasStarted = false;\r\n    }\r\n    init() {\r\n        this.loadConfiguration();\r\n    }\r\n    criticalError(message) {\r\n        const lines = message.split(\"\\n\");\r\n        lines.forEach((line) => {\r\n            console.log(\"[\" + Tools_1.default.getDateTime() + \"] \" + chalk.red(\"Critical error: \" + line));\r\n        });\r\n        if (this.hasStarted) {\r\n            console.log(\"[\" +\r\n                Tools_1.default.getDateTime() +\r\n                \"] \" +\r\n                chalk.red(\"Server will stop due to error\"));\r\n            this.stop();\r\n        }\r\n        else {\r\n            console.log(\"[\" +\r\n                Tools_1.default.getDateTime() +\r\n                \"] \" +\r\n                chalk.red(\"Server will not start due to error\"));\r\n        }\r\n    }\r\n    loadConfiguration(filename = \"\") {\r\n        if (this.hasStarted) {\r\n            this.stop();\r\n        }\r\n        if (this.configuration) {\r\n            this.unloadConfiguration();\r\n        }\r\n    }\r\n    unloadConfiguration() {\r\n        this.configuration = null;\r\n    }\r\n    start() {\r\n        //\r\n    }\r\n    stop() {\r\n        //\r\n    }\r\n}\r\nexports[\"default\"] = Core;\r\n\n\n//# sourceURL=webpack://wicked-server/./src/classes/Core.ts?");
+
+/***/ }),
+
+/***/ "./src/classes/Tools.ts":
+/*!******************************!*\
+  !*** ./src/classes/Tools.ts ***!
+  \******************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+eval("\r\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\r\nclass Tools {\r\n    static getDateTime() {\r\n        return new Date().toISOString().replace(\"T\", \" \").replace(\"Z\", \" \").trim();\r\n    }\r\n}\r\nexports[\"default\"] = Tools;\r\n\n\n//# sourceURL=webpack://wicked-server/./src/classes/Tools.ts?");
+
+/***/ }),
+
+/***/ "./src/classes/Wicked.ts":
+/*!*******************************!*\
+  !*** ./src/classes/Wicked.ts ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+eval("\r\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\r\nconst Core_1 = __webpack_require__(/*! ./Core */ \"./src/classes/Core.ts\");\r\nclass Wicked {\r\n    constructor() {\r\n        this.configurtionFile = \"\";\r\n        this.publicPath = \"\";\r\n        this.testMode = false;\r\n        this.creationMode = false;\r\n        console.log(\"Wicked:constructor\");\r\n        this.create();\r\n    }\r\n    create() {\r\n        this.core = new Core_1.default();\r\n        this.core.init();\r\n    }\r\n    start() {\r\n        this.core.start();\r\n    }\r\n    stop() {\r\n        this.core.stop();\r\n    }\r\n}\r\nexports[\"default\"] = Wicked;\r\n\n\n//# sourceURL=webpack://wicked-server/./src/classes/Wicked.ts?");
 
 /***/ }),
 
@@ -120,10 +142,10 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 /*!**********************!*\
   !*** ./src/index.ts ***!
   \**********************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"Wicked\": () => (/* reexport safe */ _Wicked__WEBPACK_IMPORTED_MODULE_0__.Wicked)\n/* harmony export */ });\n/* harmony import */ var _Wicked__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Wicked */ \"./src/Wicked.ts\");\n\r\n\n\n//# sourceURL=webpack://wicked-server/./src/index.ts?");
+eval("\r\n// export * from \"./classes/Wicked\";\r\nObject.defineProperty(exports, \"__esModule\", ({ value: true }));\r\nconst Wicked_1 = __webpack_require__(/*! ./classes/Wicked */ \"./src/classes/Wicked.ts\");\r\nnew Wicked_1.default();\r\n\n\n//# sourceURL=webpack://wicked-server/./src/index.ts?");
 
 /***/ })
 
@@ -157,34 +179,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/node module decorator */
 /******/ 	(() => {
 /******/ 		__webpack_require__.nmd = (module) => {
