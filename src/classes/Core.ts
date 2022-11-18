@@ -2,9 +2,10 @@ import Configuration from "./Configuration";
 import Server from "./Server";
 import Execution from "./Execution";
 import Log from "./Log";
+import LogConsole from "./LogConsole";
 import Tools from "./Tools";
 
-const chalk = require("chalk");
+const path = require("path");
 
 export default class Core {
   configuration: Configuration | null;
@@ -12,52 +13,47 @@ export default class Core {
   server: Server;
   log: Log;
 
+  // configuration JSON file
+  private configurationFile = "";
+
+  // public path
+  private publicPath = "";
+
   // True is the server has started
   private hasStarted = false;
 
   // True if reality is a simulation
   private isSimulated = false;
 
-  constructor() {
+  constructor(configurationFile: string) {
     this.hasStarted = false;
-  }
-  init(): void {
-    this.loadConfiguration();
-  }
+    this.configurationFile = path.resolve("./" + configurationFile);
+    LogConsole.criticalLog("Configuration file: " + this.configurationFile);
 
-  criticalError(message: string) {
-    const lines = message.split("\n");
-    lines.forEach((line) => {
-      console.log(
-        "[" + Tools.getDateTime() + "] " + chalk.red("Critical error: " + line)
-      );
-    });
-
-    if (this.hasStarted) {
-      console.log(
-        "[" +
-          Tools.getDateTime() +
-          "] " +
-          chalk.red("Server will stop due to error")
-      );
-      this.stop();
-    } else {
-      console.log(
-        "[" +
-          Tools.getDateTime() +
-          "] " +
-          chalk.red("Server will not start due to error")
-      );
-    }
+    this.loadConfiguration(this.configurationFile);
   }
 
-  loadConfiguration(filename: string = ""): void {
+  loadConfiguration(path: string = ""): void {
     if (this.hasStarted) {
       this.stop();
     }
     if (this.configuration) {
       this.unloadConfiguration();
     }
+    if (!Tools.fileExists(path)) {
+      LogConsole.criticalError("Configuration file not found: " + path);
+      process.exitCode = 1;
+      process.exit();
+    }
+
+    const newConfiguration = Tools.fileRead(this.configurationFile);
+    if (newConfiguration === false) {
+      LogConsole.criticalError("Could not read configuration: " + path);
+      process.exitCode = 1;
+      process.exit();
+    }
+
+    this.configuration = newConfiguration;
   }
 
   unloadConfiguration(): void {
