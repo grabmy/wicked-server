@@ -1,72 +1,264 @@
-import Core from "./Core";
-import LogConsole from "./LogConsole";
+import Core from './Core';
+import LogConsole from './LogConsole';
+import Tools from './Tools';
+import Configuration from './Configuration';
 
 export default class Wicked {
-  core: Core;
+  core!: Core;
 
-  private configurtionFile: string = "wicked.config.json";
-  private testMode: boolean = false;
-  private creationMode: boolean = false;
+  private _configurationFile: string = 'wicked.config.json';
+  private _testMode: boolean = false;
+  private _exitOnError: boolean = true;
+  private _hasExited = false;
+  private _creationMode = false;
+  private _version = '0.1';
+  private _rootDir: string = process.cwd();
 
-  private version = "0.1";
+  public get hasRun(): boolean {
+    if (!this.core) {
+      return false;
+    }
+    return this.core.hasRun;
+  }
+
+  public get isRunning(): boolean {
+    if (!this.core) {
+      return false;
+    }
+    return this.core.isRunning;
+  }
 
   constructor(args: Array<string> = []) {
-    LogConsole.criticalLog("wicked server v" + this.version);
-    LogConsole.criticalLog("-------------------------");
+    this.reset();
 
     if (args.length > 0) {
       this.parseCommandLine(args);
     } else {
-      const newArgs = process.argv.splice(0, 2);
+      const newArgs = process.argv.filter((item, index) => {
+        if (index > 1) return true;
+        else return false;
+      });
       this.parseCommandLine(newArgs);
     }
-    this.create();
+    if (this._hasExited) {
+      return;
+    }
+    this.start();
+  }
+
+  reset(): void {
+    LogConsole.reset();
+  }
+
+  logIntro(): void {
+    LogConsole.log('*** wicked server v' + this._version + ' ***', 'info');
+    LogConsole.log('--------------------------');
+    if (!this._exitOnError) {
+      LogConsole.log('Option: no exit on error');
+    }
+    if (LogConsole.noColors) {
+      LogConsole.log('Option: no colors');
+    }
+    if (LogConsole.noDateTime) {
+      LogConsole.log('Option: no date and time');
+    }
+    if (LogConsole.isSilent) {
+      LogConsole.log('Option: silent');
+    }
+    if (this._testMode) {
+      LogConsole.log('Option: test mode');
+    }
+    if (this._creationMode) {
+      LogConsole.log('Option: create mode');
+    }
   }
 
   parseCommandLine(args: Array<string>): void {
-    for (let index = 0; index < process.argv.length; index++) {
-      if (process.argv[index].startsWith("--")) {
-        this.option(process.argv[index]);
+    for (let index = 0; index < args.length; index++) {
+      if (args[index].startsWith('--')) {
+        this.priorityOption(args[index]);
       } else {
-        this.option(process.argv[index], process.argv[index + 1]);
+        this.priorityOption(args[index], args[index + 1]);
         index++;
+      }
+      if (this._hasExited) {
+        return;
+      }
+    }
+
+    for (let index = 0; index < args.length; index++) {
+      if (args[index].startsWith('--')) {
+        this.option(args[index]);
+      } else {
+        this.option(args[index], args[index + 1]);
+        index++;
+      }
+      if (this._hasExited) {
+        return;
       }
     }
   }
 
-  option(command: string, value: string = ""): void {
+  priorityOption(command: string, value: string = ''): void {
     switch (command) {
-      case "-c":
-        this.configurtionFile = value;
+      case '--no-exit':
+        this._exitOnError = false;
         break;
-      case "--test":
-        this.testMode = true;
+      case '--test':
+        this._testMode = true;
         break;
-      case "--creation":
-        this.creationMode = true;
+      case '--no-colors':
+        LogConsole.noColors = true;
         break;
-      case "--help":
-        LogConsole.criticalLog("options:");
-        LogConsole.criticalLog(
-          "-c <path>    : path of the JSON configuration file"
-        );
-        LogConsole.criticalLog("--help       : show help");
-        process.exit();
-      default:
-        LogConsole.criticalError(
-          "Unknown option: " + command + (value ? " " + value : "")
-        );
-        process.exitCode = 1;
-        process.exit();
+      case '--no-date-time':
+        LogConsole.noDateTime = true;
+        break;
+      case '--create':
+        this._creationMode = true;
+        break;
+      case '--silent':
+        LogConsole.isSilent = true;
+        break;
+      case '-config':
+        this._configurationFile = value;
+        break;
     }
   }
 
-  create(): void {
-    this.core = new Core(this.configurtionFile);
+  option(command: string, value: string = ''): void {
+    switch (command) {
+      case '--no-exit':
+      case '--test':
+      case '--no-colors':
+      case '--no-date-time':
+      case '--silent':
+      case '-config':
+        break;
+      case '--help':
+        this.commandHelp();
+        return;
+      case '--create':
+        this.commandCreation();
+        break;
+      default:
+        this.optionError(command, value);
+        return;
+    }
   }
 
-  start(): void {
+  optionError(command: string, value: string): void {
+    this.logIntro();
+    LogConsole.log('Critical error: Unknown option: ' + command + (value ? ' ' + value : ''), 'critical');
+    LogConsole.log('Server will not start due to error', 'critical');
+    if (this._exitOnError) {
+      process.exit(1);
+    }
+    this._hasExited = true;
+  }
+
+  commandHelp(): void {
+    this.logIntro();
+    LogConsole.log('options:');
+    LogConsole.log('    -config <path>  : path of the JSON configuration file');
+    LogConsole.log('    --no-colors     : remove colors in console message');
+    LogConsole.log('    --no-date-time  : remove date and time in console message');
+    LogConsole.log("    --no-exit       : don't exit process on error");
+    LogConsole.log("    --silent        : don't log message in console");
+    LogConsole.log('    --help          : show help');
+
+    this._hasExited = true;
+  }
+
+  commandCreation(): void {
+    this.logIntro();
+
+    // Create directory for configuration file
+    LogConsole.log('Checking configuration directory: ' + Tools.getDir(this._configurationFile));
+    if (!Tools.dirExists(this._configurationFile)) {
+      LogConsole.log('Configuration directory do not exist');
+      const configurationDir = Tools.getAbsoluteDir(this._configurationFile);
+      if (!configurationDir.startsWith(rootDir)) {
+        LogConsole.log('Configuration directory is outside the root directory', 'warning');
+        LogConsole.log('The directory will not be created automatically', 'warning');
+      } else {
+        LogConsole.log('Creating configuration directory ...');
+        Tools.dirCreate(configurationDir);
+        if (!Tools.dirExists(this._configurationFile)) {
+          LogConsole.log('Could not create the configuration directory', 'error');
+        } else {
+          LogConsole.log('Configuration directory created', 'success');
+        }
+      }
+    } else {
+      LogConsole.log('Configuration directory already exists', 'success');
+    }
+
+    // Create configuration file
+    LogConsole.log('Checking configuration file: ' + Tools.getAbsoluteFile(this._configurationFile));
+    if (!Tools.dirExists(this._configurationFile)) {
+      LogConsole.log('Could not create the configuration file', 'error');
+      LogConsole.log('Cannot continue without the configuration file', 'error');
+      this._hasExited = true;
+      return;
+    }
+    if (!Tools.fileExists(this._configurationFile)) {
+      LogConsole.log('Configuration file do not exist');
+      const destination = Tools.getAbsoluteFile(this._configurationFile);
+      const source = Tools.getAbsoluteFile(__dirname + '/../../default.config.json');
+      console.log('source = ' + source + ', destination = ' + destination);
+      LogConsole.log('Creating configuration file ...');
+      Tools.fileCopy(source, destination);
+      if (!Tools.fileExists(destination)) {
+        LogConsole.log('Could not create the configuration file', 'error');
+        this._hasExited = true;
+        return;
+      }
+      LogConsole.log('Configuration file created', 'success');
+    } else {
+      LogConsole.log('Configuration file already exists', 'success');
+    }
+
+    LogConsole.log('Loading the configuration file ...');
+    let newConfiguration: Configuration;
+    try {
+      newConfiguration = new Configuration(Tools.fileReadJson(this._configurationFile));
+    } catch (err) {
+      LogConsole.log(err + '', 'error');
+      LogConsole.log('Could not read the configuration file', 'error');
+      this._hasExited = true;
+      return;
+    }
+
+    LogConsole.log('Configuration file parsed and configuration object created', 'success');
+    console.log(newConfiguration.public);
+    const publicDirectory = Tools.getDir(newConfiguration.public);
+    console.log('publicDirectory = ' + publicDirectory);
+    LogConsole.log('Checking public directory: ' + publicDirectory);
+    if (!Tools.dirExists(publicDirectory)) {
+      LogConsole.log('Public directory do not exist');
+      const rootDir = Tools.getAbsoluteDir(this._rootDir);
+      if (!publicDirectory.startsWith(rootDir)) {
+        LogConsole.log('Public directory is outside the root directory', 'warning');
+        LogConsole.log('The directory will not be created automatically', 'warning');
+      } else {
+        LogConsole.log('Creating public directory ...');
+        Tools.dirCreate(publicDirectory);
+        if (!Tools.dirExists(publicDirectory)) {
+          LogConsole.log('Could not create the public directory', 'error');
+        }
+      }
+    } else {
+      LogConsole.log('Public directory already exists', 'success');
+    }
+
+    this._hasExited = true;
+    return;
+  }
+
+  start(): Wicked {
+    this.logIntro();
     this.core.start();
+    return this;
   }
 
   stop(): void {

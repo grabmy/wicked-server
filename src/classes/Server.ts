@@ -1,5 +1,5 @@
-import express from "express";
-import Core from "./Core";
+import express from 'express';
+import Core from './Core';
 
 export default class Server {
   core: Core;
@@ -13,16 +13,14 @@ export default class Server {
   }
 
   init(): void {
-    this.app.get("/", (req: any, res: any) => {
-      res.send("Hello World!");
+    this.app.get('/', (req: any, res: any) => {
+      res.send('Hello World!');
     });
   }
 
   start(): void {
-    this.server = this.app.listen(this.core.configuration.port, () => {
-      console.log(
-        `Example app listening on port ${this.core.configuration.port}`
-      );
+    this.server = this.app.listen(3000, () => {
+      console.log(`Example app listening on port 3000`);
     });
   }
 

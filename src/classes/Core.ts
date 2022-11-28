@@ -1,23 +1,21 @@
-import Configuration from "./Configuration";
-import Server from "./Server";
-import Execution from "./Execution";
-import Log from "./Log";
-import LogConsole from "./LogConsole";
-import Tools from "./Tools";
+import Configuration from './Configuration';
+import Server from './Server';
+import Execution from './Execution';
+import LogConsole from './LogConsole';
+import Tools from './Tools';
 
-const path = require("path");
+const path = require('path');
 
 export default class Core {
-  configuration: Configuration | null;
-  execution: Execution;
-  server: Server;
-  log: Log;
+  configuration!: Configuration | null;
+  execution!: Execution;
+  server!: Server;
 
   // configuration JSON file
-  private configurationFile = "";
+  private configurationFile = '';
 
-  // public path
-  private publicPath = "";
+  // root path
+  private rootPath = process.cwd();
 
   // True is the server has started
   private hasStarted = false;
@@ -25,15 +23,28 @@ export default class Core {
   // True if reality is a simulation
   private isSimulated = false;
 
+  private _isRunning = false;
+
+  private _hasRun = false;
+
+  public get isRunning(): boolean {
+    return this._isRunning;
+  }
+
+  public get hasRun(): boolean {
+    return !this._isRunning && this._hasRun;
+  }
+
   constructor(configurationFile: string) {
     this.hasStarted = false;
-    this.configurationFile = path.resolve("./" + configurationFile);
-    LogConsole.criticalLog("Configuration file: " + this.configurationFile);
+    this.configurationFile = path.resolve('./' + configurationFile);
+    LogConsole.log('Root directory: ' + this.rootPath);
+    LogConsole.log('Configuration file: ' + this.configurationFile);
 
     this.loadConfiguration(this.configurationFile);
   }
 
-  loadConfiguration(path: string = ""): void {
+  loadConfiguration(path: string = ''): void {
     if (this.hasStarted) {
       this.stop();
     }
@@ -41,14 +52,16 @@ export default class Core {
       this.unloadConfiguration();
     }
     if (!Tools.fileExists(path)) {
-      LogConsole.criticalError("Configuration file not found: " + path);
+      LogConsole.log('Critical error: Configuration file not found: ' + path, 'critical');
+      LogConsole.log('Server will not start due to error', 'critical');
       process.exitCode = 1;
       process.exit();
     }
 
-    const newConfiguration = Tools.fileRead(this.configurationFile);
+    const newConfiguration = Tools.fileReadJson(this.configurationFile);
     if (newConfiguration === false) {
-      LogConsole.criticalError("Could not read configuration: " + path);
+      LogConsole.log('Critical error: Could not read configuration: ' + path, 'critical');
+      LogConsole.log('Server will not start due to error', 'critical');
       process.exitCode = 1;
       process.exit();
     }
@@ -61,10 +74,11 @@ export default class Core {
   }
 
   start(): void {
-    //
+    this._isRunning = true;
+    this._hasRun = true;
   }
 
   stop(): void {
-    //
+    this._isRunning = false;
   }
 }

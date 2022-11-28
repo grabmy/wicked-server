@@ -1,7 +1,57 @@
-import Core from "./Core";
-
 export default class Configuration {
-  port = 3000;
+  private _data!: ConfigurationData;
 
-  core: Core;
+  constructor(data: any) {
+    this._data = initConfigurationData(data);
+  }
+
+  get port(): number {
+    return this._data.port;
+  }
+
+  get public(): string {
+    return this._data.public;
+  }
+
+  get log(): LogData | undefined {
+    return this._data.log;
+  }
+}
+
+export interface ConfigurationData {
+  port: number;
+  public: string;
+  log?: LogData;
+}
+
+function initConfigurationData(options?: Partial<ConfigurationData>): ConfigurationData {
+  const defaults = {
+    port: 3000,
+    public: 'public',
+    log: initLog(),
+  };
+
+  return {
+    ...defaults,
+    ...options,
+  };
+}
+
+interface LogData {
+  console?: any;
+  error?: any;
+  access?: any;
+}
+
+function initLog(options?: Partial<LogData>): LogData {
+  const defaults = {
+    console: {},
+    error: {},
+    access: {},
+  };
+
+  return {
+    ...defaults,
+    ...options,
+  };
 }
