@@ -20,9 +20,6 @@ export default class Core {
   // True is the server has started
   private hasStarted = false;
 
-  // True if reality is a simulation
-  private isSimulated = false;
-
   private _isRunning = false;
 
   private _hasRun = false;

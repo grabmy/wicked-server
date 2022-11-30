@@ -25,14 +25,10 @@ var Tools = /** @class */ (function () {
         return fs.existsSync(dir);
     };
     Tools.dirCreate = function (path) {
-        console.log('dirCreate: path = ' + path);
         var dir = Tools.getDir(path + '\\');
-        console.log('dirCreate: dir = ' + dir);
         if (!fs.existsSync(dir)) {
-            console.log('dirCreate: creating ...');
             fs.mkdirSync(dir);
         }
-        console.log('dirCreate: done, ' + fs.existsSync(dir));
         return fs.existsSync(dir);
     };
     Tools.fileCopy = function (source, destination) {
@@ -80,7 +76,6 @@ var Tools = /** @class */ (function () {
         return require('path').normalize('./' + require('path').dirname(path) + '/');
     };
     Tools.getAbsoluteDir = function (path) {
-        console.log('getAbsoluteDir: path = ' + path);
         return require('path').dirname(require('path').resolve(path));
     };
     Tools.getAbsoluteFile = function (path) {

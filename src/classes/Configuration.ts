@@ -5,6 +5,10 @@ export default class Configuration {
     this._data = initConfigurationData(data);
   }
 
+  get name(): string {
+    return this._data.name;
+  }
+
   get port(): number {
     return this._data.port;
   }
@@ -19,6 +23,7 @@ export default class Configuration {
 }
 
 export interface ConfigurationData {
+  name: string;
   port: number;
   public: string;
   log?: LogData;
@@ -26,8 +31,9 @@ export interface ConfigurationData {
 
 function initConfigurationData(options?: Partial<ConfigurationData>): ConfigurationData {
   const defaults = {
+    name: '',
     port: 3000,
-    public: 'public',
+    public: 'public/',
     log: initLog(),
   };
 

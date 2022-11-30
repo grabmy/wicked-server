@@ -1,6 +1,7 @@
 {
+    "name": "simple",
     "port": 3000,
-    "public": "public/",
+    "public": "public/www/",
     "log": {
         "console": {
             "enabled": true,

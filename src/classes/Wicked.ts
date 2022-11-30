@@ -158,6 +158,7 @@ export default class Wicked {
 
   commandHelp(): void {
     this.logIntro();
+    LogConsole.log('Help: instructions to use the wicked server command');
     LogConsole.log('options:');
     LogConsole.log('    -config <path>  : path of the JSON configuration file');
     LogConsole.log('    --no-colors     : remove colors in console message');
@@ -176,13 +177,13 @@ export default class Wicked {
     LogConsole.log('Checking configuration directory: ' + Tools.getDir(this._configurationFile));
     if (!Tools.dirExists(this._configurationFile)) {
       LogConsole.log('Configuration directory do not exist');
-      const configurationDir = Tools.getAbsoluteDir(this._configurationFile);
-      if (!configurationDir.startsWith(rootDir)) {
+      const configurationDir = Tools.getDir(this._configurationFile);
+      if (!Tools.dirRelativeTo(configurationDir, './')) {
         LogConsole.log('Configuration directory is outside the root directory', 'warning');
         LogConsole.log('The directory will not be created automatically', 'warning');
       } else {
         LogConsole.log('Creating configuration directory ...');
-        Tools.dirCreate(configurationDir);
+        Tools.dirCreateAll(configurationDir);
         if (!Tools.dirExists(this._configurationFile)) {
           LogConsole.log('Could not create the configuration directory', 'error');
         } else {
@@ -194,8 +195,8 @@ export default class Wicked {
     }
 
     // Create configuration file
-    LogConsole.log('Checking configuration file: ' + Tools.getAbsoluteFile(this._configurationFile));
-    if (!Tools.dirExists(this._configurationFile)) {
+    LogConsole.log('Checking configuration file: ' + this._configurationFile);
+    if (!Tools.dirExists(Tools.getDir(this._configurationFile))) {
       LogConsole.log('Could not create the configuration file', 'error');
       LogConsole.log('Cannot continue without the configuration file', 'error');
       this._hasExited = true;
@@ -203,9 +204,8 @@ export default class Wicked {
     }
     if (!Tools.fileExists(this._configurationFile)) {
       LogConsole.log('Configuration file do not exist');
-      const destination = Tools.getAbsoluteFile(this._configurationFile);
-      const source = Tools.getAbsoluteFile(__dirname + '/../../default.config.json');
-      console.log('source = ' + source + ', destination = ' + destination);
+      const destination = this._configurationFile;
+      const source = require('path').normalize(__dirname + '/../../default.config.json');
       LogConsole.log('Creating configuration file ...');
       Tools.fileCopy(source, destination);
       if (!Tools.fileExists(destination)) {
@@ -230,19 +230,16 @@ export default class Wicked {
     }
 
     LogConsole.log('Configuration file parsed and configuration object created', 'success');
-    console.log(newConfiguration.public);
     const publicDirectory = Tools.getDir(newConfiguration.public);
-    console.log('publicDirectory = ' + publicDirectory);
     LogConsole.log('Checking public directory: ' + publicDirectory);
     if (!Tools.dirExists(publicDirectory)) {
       LogConsole.log('Public directory do not exist');
-      const rootDir = Tools.getAbsoluteDir(this._rootDir);
-      if (!publicDirectory.startsWith(rootDir)) {
+      if (!Tools.dirRelativeTo(publicDirectory, this._rootDir)) {
         LogConsole.log('Public directory is outside the root directory', 'warning');
         LogConsole.log('The directory will not be created automatically', 'warning');
       } else {
         LogConsole.log('Creating public directory ...');
-        Tools.dirCreate(publicDirectory);
+        Tools.dirCreateAll(publicDirectory);
         if (!Tools.dirExists(publicDirectory)) {
           LogConsole.log('Could not create the public directory', 'error');
         }

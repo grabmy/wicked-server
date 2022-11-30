@@ -33,7 +33,6 @@ describe('Tools', () => {
       const time = 1669626086519; //
       const specific = '2022-11-28 09:01:26.000';
       const dateTime = Tools.getDateTime(1669626086519) + '.' + specific.split('.')[1];
-      console.log('specific dateTime ' + dateTime);
       const current =
         new Date().toISOString().replace('T', ' ').replace('Z', ' ').trim() + '.' + dateTime.split('.')[1];
       expect(dateTime.length).toBe(23);
@@ -77,15 +76,15 @@ describe('Tools', () => {
     test('File exists on non-existing file', async () => {
       const exists = Tools.fileExists('i-do-not-exist.null');
       expect(exists).toBe(false);
-      expect(LogConsole.output.length).toBe(1);
-      expect(LogConsole.hasError).toBe(true);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
     });
 
     test('File exists on non-existing directory', async () => {
       const exists = Tools.fileExists('i/do/not/exist/null/');
       expect(exists).toBe(false);
-      expect(LogConsole.output.length).toBe(1);
-      expect(LogConsole.hasError).toBe(true);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
     });
 
     test('File exists on existing directory', async () => {
@@ -115,7 +114,7 @@ describe('Tools', () => {
 
       expect(success).toBe(false);
       expect(exists).toBe(false);
-      expect(LogConsole.output.length).toBe(2);
+      expect(LogConsole.output.length).toBe(1);
       expect(LogConsole.hasError).toBe(true);
     });
 
@@ -127,7 +126,7 @@ describe('Tools', () => {
 
       expect(success).toBe(false);
       expect(exists).toBe(false);
-      expect(LogConsole.output.length).toBe(2);
+      expect(LogConsole.output.length).toBe(1);
       expect(LogConsole.hasError).toBe(true);
     });
 
@@ -158,12 +157,32 @@ describe('Tools', () => {
       expect(LogConsole.output.length).toBe(0);
       expect(LogConsole.hasError).toBe(false);
     });
+
+    test('Create and delete file', async () => {
+      const path = 'tests/test.test';
+      const content = 'test';
+
+      const writeSuccess = Tools.fileWrite(path, content);
+      expect(writeSuccess).toBe(true);
+      expect(Tools.fileExists(path)).toBe(true);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
+
+      const deleteSuccess = Tools.fileDelete(path);
+      expect(deleteSuccess).toBe(true);
+      expect(Tools.fileExists(path)).toBe(false);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
+    });
   });
 
   describe('Directory', () => {
     beforeEach(() => {
       try {
-        require('fs').unlinkSync('tests/test/');
+        require('fs').rmSync('tests/test/', { recursive: true });
+      } catch (e) {}
+      try {
+        require('fs').rmSync('test2/', { recursive: true });
       } catch (e) {}
       LogConsole.reset();
       LogConsole.isSilent = true;
@@ -171,7 +190,10 @@ describe('Tools', () => {
 
     afterAll(() => {
       try {
-        require('fs').unlinkSync('tests/test/');
+        require('fs').rmSync('tests/test/', { recursive: true });
+      } catch (e) {}
+      try {
+        require('fs').rmSync('test2/', { recursive: true });
       } catch (e) {}
     });
 
@@ -184,16 +206,16 @@ describe('Tools', () => {
 
     test('Directory exists on absolute path directory', async () => {
       const exists = Tools.dirExists(require('path').resolve('tests/'));
-      expect(exists).toBe(true);
-      expect(LogConsole.output.length).toBe(0);
-      expect(LogConsole.hasError).toBe(false);
+      expect(exists).toBe(false);
+      expect(LogConsole.output.length).toBe(1);
+      expect(LogConsole.hasError).toBe(true);
     });
 
     test('Directory exists on absolute path file', async () => {
       const exists = Tools.dirExists(require('path').resolve('tests/tools.test.ts'));
-      expect(exists).toBe(true);
-      expect(LogConsole.output.length).toBe(0);
-      expect(LogConsole.hasError).toBe(false);
+      expect(exists).toBe(false);
+      expect(LogConsole.output.length).toBe(1);
+      expect(LogConsole.hasError).toBe(true);
     });
 
     test('Directory exists on existing file', async () => {
@@ -212,7 +234,7 @@ describe('Tools', () => {
 
     test('Directory exists on non-existing file', async () => {
       const exists = Tools.dirExists('tests/i-do-not-exist.null');
-      expect(exists).toBe(true);
+      expect(exists).toBe(false);
       expect(LogConsole.output.length).toBe(0);
       expect(LogConsole.hasError).toBe(false);
     });
@@ -234,21 +256,76 @@ describe('Tools', () => {
       expect(LogConsole.hasError).toBe(false);
     });
 
-    test('Directory create', async () => {
+    test('Directory create simple', async () => {
       const dirCreate = Tools.dirCreate('test2/');
       expect(dirCreate).toBe(true);
       expect(LogConsole.output.length).toBe(0);
       expect(LogConsole.hasError).toBe(false);
+    });
 
-      const dirMultipleCreate = Tools.dirCreate('test2/create/multiple/dir/');
-      expect(dirMultipleCreate).toBe(true);
-      expect(LogConsole.output.length).toBe(0);
-      expect(LogConsole.hasError).toBe(false);
-
-      const dirMultipleCreateFile = Tools.dirCreate('test2/i/do/not/exist.null');
+    test('Directory create with file', async () => {
+      const dirMultipleCreateFile = Tools.dirCreateAll('test2/i/do/not/exist.null');
       expect(dirMultipleCreateFile).toBe(true);
       expect(LogConsole.output.length).toBe(0);
       expect(LogConsole.hasError).toBe(false);
+    });
+
+    test('Directory create multiple', async () => {
+      const dirMultipleCreate = Tools.dirCreateAll('test2/create/multiple/dir/');
+      expect(dirMultipleCreate).toBe(true);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
+    });
+
+    test('Directory relative to inside directory', async () => {
+      const insideDir = 'test2/create/multiple/dir/';
+      const rootDir = 'test2/';
+      const inside = Tools.dirRelativeTo(insideDir, rootDir);
+      expect(inside).toBe(true);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
+    });
+
+    test('Directory relative to outside directory', async () => {
+      const outsideDir = 'tests/empty/';
+      const rootDir = 'test2/';
+      const outside = Tools.dirRelativeTo(outsideDir, rootDir);
+      expect(outside).toBe(false);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
+    });
+
+    test('Directory relative to back directory', async () => {
+      const backDir = 'test2/../../';
+      const rootDir = 'test2/';
+      const back = Tools.dirRelativeTo(backDir, rootDir);
+      expect(back).toBe(false);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
+    });
+
+    test('Path validation', async () => {
+      const normalDir = 'test2/';
+      const normal = Tools.pathValidation(normalDir);
+      expect(normal).toBe(true);
+      expect(LogConsole.output.length).toBe(0);
+      expect(LogConsole.hasError).toBe(false);
+    });
+
+    test('Path validation on root directory', async () => {
+      const rootDir = '/test/';
+      const root = Tools.pathValidation(rootDir);
+      expect(root).toBe(false);
+      expect(LogConsole.output.length).toBe(1);
+      expect(LogConsole.hasError).toBe(true);
+    });
+
+    test('Path validation on absolute directory', async () => {
+      const absoluteDir = require('path').resolve('tests/empty/');
+      const absolute = Tools.pathValidation(absoluteDir);
+      expect(absolute).toBe(false);
+      expect(LogConsole.output.length).toBe(1);
+      expect(LogConsole.hasError).toBe(true);
     });
   });
 });
