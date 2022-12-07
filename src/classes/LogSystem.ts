@@ -1,6 +1,6 @@
 import Tools from './Tools';
 
-export default class LogConsole {
+export default class LogSystem {
   public static output: Array<string> = [];
   public static noColors: boolean = false;
   public static noDateTime: boolean = false;
@@ -9,16 +9,16 @@ export default class LogConsole {
   public static isSilent: boolean = false;
 
   static reset(): void {
-    LogConsole.output = [];
-    LogConsole.noColors = false;
-    LogConsole.noDateTime = false;
-    LogConsole.hasCriticalError = false;
-    LogConsole.hasError = false;
-    LogConsole.isSilent = false;
+    LogSystem.output = [];
+    LogSystem.noColors = false;
+    LogSystem.noDateTime = false;
+    LogSystem.hasCriticalError = false;
+    LogSystem.hasError = false;
+    LogSystem.isSilent = false;
   }
 
   static getColor(type: string = '') {
-    if (LogConsole.noColors) {
+    if (LogSystem.noColors) {
       return '';
     }
 
@@ -40,7 +40,7 @@ export default class LogConsole {
   }
 
   static getDateTime() {
-    if (LogConsole.noDateTime) {
+    if (LogSystem.noDateTime) {
       return '';
     }
     return '[' + Tools.getDateTime() + ']';
@@ -49,19 +49,19 @@ export default class LogConsole {
   static log(message: string, type: string = 'regular') {
     const lines = message.split('\n');
     lines.forEach((line) => {
-      const finalMessage = (LogConsole.getDateTime() != '' ? LogConsole.getDateTime() + '\t' : '') + type + '\t' + line;
-      if (!LogConsole.isSilent) {
-        const consoleMessage = (LogConsole.getDateTime() != '' ? LogConsole.getDateTime() + '\t' : '') + line;
-        console.log(LogConsole.getColor(type), consoleMessage);
+      const finalMessage = (LogSystem.getDateTime() != '' ? LogSystem.getDateTime() + '\t' : '') + type + '\t' + line;
+      if (!LogSystem.isSilent) {
+        const consoleMessage = (LogSystem.getDateTime() != '' ? LogSystem.getDateTime() + '\t' : '') + line;
+        console.log(LogSystem.getColor(type), consoleMessage);
       }
-      LogConsole.output.push(finalMessage);
+      LogSystem.output.push(finalMessage);
     });
 
     if (type == 'critical') {
-      LogConsole.hasError = true;
-      LogConsole.hasCriticalError = true;
+      LogSystem.hasError = true;
+      LogSystem.hasCriticalError = true;
     } else if (type == 'error') {
-      LogConsole.hasError = true;
+      LogSystem.hasError = true;
     }
   }
 }

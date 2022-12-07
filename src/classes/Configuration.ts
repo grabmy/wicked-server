@@ -51,9 +51,8 @@ interface LogData {
 
 function initLog(options?: Partial<LogData>): LogData {
   const defaults = {
-    console: {},
-    error: {},
-    access: {},
+    error: { enabled: false },
+    access: { enabled: false },
   };
 
   return {

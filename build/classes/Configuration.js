@@ -15,6 +15,13 @@ var Configuration = /** @class */ (function () {
     function Configuration(data) {
         this._data = initConfigurationData(data);
     }
+    Object.defineProperty(Configuration.prototype, "name", {
+        get: function () {
+            return this._data.name;
+        },
+        enumerable: false,
+        configurable: true
+    });
     Object.defineProperty(Configuration.prototype, "port", {
         get: function () {
             return this._data.port;
@@ -41,17 +48,17 @@ var Configuration = /** @class */ (function () {
 exports.default = Configuration;
 function initConfigurationData(options) {
     var defaults = {
+        name: '',
         port: 3000,
-        public: 'public',
+        public: 'public/',
         log: initLog(),
     };
     return __assign(__assign({}, defaults), options);
 }
 function initLog(options) {
     var defaults = {
-        console: {},
-        error: {},
-        access: {},
+        error: { enabled: false },
+        access: { enabled: false },
     };
     return __assign(__assign({}, defaults), options);
 }

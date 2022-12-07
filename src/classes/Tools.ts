@@ -1,4 +1,5 @@
-import LogConsole from './LogConsole';
+import LogSystem from './LogSystem';
+import axios, { AxiosResponse, AxiosError } from 'axios';
 
 const fs = require('fs');
 
@@ -57,7 +58,7 @@ export default class Tools {
       fs.copyFileSync(source, destination);
       return Tools.fileExists(destination);
     } catch (err) {
-      LogConsole.log('' + err, 'error');
+      LogSystem.log('' + err, 'error');
       return false;
     }
   }
@@ -73,7 +74,7 @@ export default class Tools {
       fs.unlinkSync(path);
       return true;
     } catch (err) {
-      LogConsole.log('' + err, 'error');
+      LogSystem.log('' + err, 'error');
       return false;
     }
   }
@@ -85,7 +86,7 @@ export default class Tools {
     try {
       return fs.readFileSync(path).toString();
     } catch (err) {
-      LogConsole.log('' + err, 'error');
+      LogSystem.log('' + err, 'error');
       return false;
     }
   }
@@ -97,7 +98,7 @@ export default class Tools {
     try {
       return JSON.parse(fs.readFileSync(path));
     } catch (err) {
-      LogConsole.log('' + err, 'error');
+      LogSystem.log('' + err, 'error');
       return false;
     }
   }
@@ -110,18 +111,18 @@ export default class Tools {
       require('fs').writeFileSync(path, content);
       return true;
     } catch (err) {
-      LogConsole.log('' + err, 'error');
+      LogSystem.log('' + err, 'error');
       return false;
     }
   }
 
   static pathValidation(path: string): boolean {
     if (require('path').isAbsolute(path)) {
-      LogConsole.log('Error: Cannot use absolute path "' + path + '"', 'error');
+      LogSystem.log('Error: Cannot use absolute path "' + path + '"', 'error');
       return false;
     }
     if (require('path').normalize(path).startsWith(require('path').sep)) {
-      LogConsole.log('Error: Cannot use relative path "' + path + '" starting with directory separator', 'error');
+      LogSystem.log('Error: Cannot use relative path "' + path + '" starting with directory separator', 'error');
       return false;
     }
     return true;
@@ -185,10 +186,10 @@ export default class Tools {
       return true;
     }
     try {
-      fs.rmSync(path, { recursive });
+      fs.rmdirSync(path, { recursive });
       return true;
     } catch (err) {
-      LogConsole.log('' + err, 'error');
+      LogSystem.log('' + err, 'error');
       return false;
     }
   }
@@ -199,4 +200,109 @@ export default class Tools {
     }
     return require('path').normalize('./' + require('path').dirname(path) + '/');
   }
+
+  /*************************************************************
+   * Request
+   ************************************************************/
+
+  static async get(url: string, options?: any): Promise<RequestResponse> {
+    function getContentType(response: AxiosResponse | undefined): string {
+      if (!response) {
+        return '';
+      }
+      let contentType = '';
+      if (typeof response.headers.getContentType === 'function') {
+        contentType = response.headers.getContentType()?.toString() || '';
+      } else if (typeof response.headers.getContentType === 'string') {
+        contentType = response.headers.getContentType || '';
+      }
+      return contentType;
+    }
+
+    function getMimeType(response: AxiosResponse | undefined): string {
+      if (!response) {
+        return '';
+      }
+      const contentType = getContentType(response);
+      const parts = contentType.split(';');
+      return parts[0];
+    }
+
+    function getCharset(response: AxiosResponse | undefined): string {
+      if (!response) {
+        return '';
+      }
+      const contentType = getContentType(response);
+      const parts = contentType.split(';');
+      let charset = '';
+      for (let t = 0; t < parts.length; t++) {
+        if (parts[t].trim().toLowerCase().startsWith('charset=')) {
+          charset = parts[t].replace('charset=', '').trim();
+        }
+      }
+      return charset;
+    }
+
+    return await axios({
+      ...{
+        url,
+        method: 'GET',
+        timeout: 8000,
+      },
+      ...options,
+    })
+      .then(function (response: AxiosResponse) {
+        let json: Object | null = null;
+        if (response?.data instanceof Object) {
+          json = response.data;
+        }
+
+        const result: RequestResponse = {
+          response,
+          error: null,
+          ok: true,
+          code: response.status,
+          mimeType: getMimeType(response),
+          charset: getCharset(response),
+          html: response.data,
+          json: null,
+        };
+        return result;
+      })
+      .catch(function (error: AxiosError) {
+        let html: String = '';
+        if (error.response?.data instanceof String) {
+          html = error.response.data;
+        }
+        let contentType = '';
+        if (typeof error.response?.headers.getContentType === 'function') {
+          contentType = error.response?.headers.getContentType()?.toString() || '';
+        } else if (typeof error.response?.headers.getContentType === 'string') {
+          contentType = error.response?.headers.getContentType || '';
+        }
+
+        const result: RequestResponse = {
+          response: error.response || null,
+          error,
+          ok: false,
+          code: error.status || 0,
+          mimeType: getMimeType(error.response),
+          charset: getCharset(error.response),
+          html: html,
+          json: null,
+        };
+        return result;
+      });
+  }
+}
+
+interface RequestResponse {
+  response: AxiosResponse | null;
+  error: AxiosError | null;
+  ok: boolean;
+  code: number;
+  html: String;
+  mimeType: String;
+  charset: String;
+  json: Object | null;
 }

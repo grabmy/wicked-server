@@ -1,5 +1,5 @@
 import Core from './Core';
-import LogConsole from './LogConsole';
+import LogSystem from './LogSystem';
 import Tools from './Tools';
 import Configuration from './Configuration';
 
@@ -47,29 +47,29 @@ export default class Wicked {
   }
 
   reset(): void {
-    LogConsole.reset();
+    LogSystem.reset();
   }
 
   logIntro(): void {
-    LogConsole.log('*** wicked server v' + this._version + ' ***', 'info');
-    LogConsole.log('--------------------------');
+    LogSystem.log('*** wicked server v' + this._version + ' ***', 'info');
+    LogSystem.log('--------------------------');
     if (!this._exitOnError) {
-      LogConsole.log('Option: no exit on error');
+      LogSystem.log('Option: no exit on error');
     }
-    if (LogConsole.noColors) {
-      LogConsole.log('Option: no colors');
+    if (LogSystem.noColors) {
+      LogSystem.log('Option: no colors');
     }
-    if (LogConsole.noDateTime) {
-      LogConsole.log('Option: no date and time');
+    if (LogSystem.noDateTime) {
+      LogSystem.log('Option: no date and time');
     }
-    if (LogConsole.isSilent) {
-      LogConsole.log('Option: silent');
+    if (LogSystem.isSilent) {
+      LogSystem.log('Option: silent');
     }
     if (this._testMode) {
-      LogConsole.log('Option: test mode');
+      LogSystem.log('Option: test mode');
     }
     if (this._creationMode) {
-      LogConsole.log('Option: create mode');
+      LogSystem.log('Option: create mode');
     }
   }
 
@@ -108,16 +108,16 @@ export default class Wicked {
         this._testMode = true;
         break;
       case '--no-colors':
-        LogConsole.noColors = true;
+        LogSystem.noColors = true;
         break;
       case '--no-date-time':
-        LogConsole.noDateTime = true;
+        LogSystem.noDateTime = true;
         break;
       case '--create':
         this._creationMode = true;
         break;
       case '--silent':
-        LogConsole.isSilent = true;
+        LogSystem.isSilent = true;
         break;
       case '-config':
         this._configurationFile = value;
@@ -148,8 +148,8 @@ export default class Wicked {
 
   optionError(command: string, value: string): void {
     this.logIntro();
-    LogConsole.log('Critical error: Unknown option: ' + command + (value ? ' ' + value : ''), 'critical');
-    LogConsole.log('Server will not start due to error', 'critical');
+    LogSystem.log('Critical error: Unknown option: ' + command + (value ? ' ' + value : ''), 'critical');
+    LogSystem.log('Server will not start due to error', 'critical');
     if (this._exitOnError) {
       process.exit(1);
     }
@@ -158,14 +158,14 @@ export default class Wicked {
 
   commandHelp(): void {
     this.logIntro();
-    LogConsole.log('Help: instructions to use the wicked server command');
-    LogConsole.log('options:');
-    LogConsole.log('    -config <path>  : path of the JSON configuration file');
-    LogConsole.log('    --no-colors     : remove colors in console message');
-    LogConsole.log('    --no-date-time  : remove date and time in console message');
-    LogConsole.log("    --no-exit       : don't exit process on error");
-    LogConsole.log("    --silent        : don't log message in console");
-    LogConsole.log('    --help          : show help');
+    LogSystem.log('Help: instructions to use the wicked server command');
+    LogSystem.log('options:');
+    LogSystem.log('    -config <path>  : path of the JSON configuration file');
+    LogSystem.log('    --no-colors     : remove colors in console message');
+    LogSystem.log('    --no-date-time  : remove date and time in console message');
+    LogSystem.log("    --no-exit       : don't exit process on error");
+    LogSystem.log("    --silent        : don't log message in console");
+    LogSystem.log('    --help          : show help');
 
     this._hasExited = true;
   }
@@ -174,78 +174,128 @@ export default class Wicked {
     this.logIntro();
 
     // Create directory for configuration file
-    LogConsole.log('Checking configuration directory: ' + Tools.getDir(this._configurationFile));
+    LogSystem.log('Checking configuration directory: ' + Tools.getDir(this._configurationFile));
     if (!Tools.dirExists(this._configurationFile)) {
-      LogConsole.log('Configuration directory do not exist');
+      LogSystem.log('Configuration directory do not exist');
       const configurationDir = Tools.getDir(this._configurationFile);
       if (!Tools.dirRelativeTo(configurationDir, './')) {
-        LogConsole.log('Configuration directory is outside the root directory', 'warning');
-        LogConsole.log('The directory will not be created automatically', 'warning');
+        LogSystem.log('Configuration directory is outside the root directory', 'warning');
+        LogSystem.log('The directory will not be created automatically', 'warning');
       } else {
-        LogConsole.log('Creating configuration directory ...');
+        LogSystem.log('Creating configuration directory ...');
         Tools.dirCreateAll(configurationDir);
         if (!Tools.dirExists(this._configurationFile)) {
-          LogConsole.log('Could not create the configuration directory', 'error');
+          LogSystem.log('Could not create the configuration directory', 'error');
         } else {
-          LogConsole.log('Configuration directory created', 'success');
+          LogSystem.log('Configuration directory created', 'success');
         }
       }
     } else {
-      LogConsole.log('Configuration directory already exists', 'success');
+      LogSystem.log('Configuration directory already exists', 'success');
     }
 
     // Create configuration file
-    LogConsole.log('Checking configuration file: ' + this._configurationFile);
+    LogSystem.log('Checking configuration file: ' + this._configurationFile);
     if (!Tools.dirExists(Tools.getDir(this._configurationFile))) {
-      LogConsole.log('Could not create the configuration file', 'error');
-      LogConsole.log('Cannot continue without the configuration file', 'error');
+      LogSystem.log('Could not create the configuration file', 'error');
+      LogSystem.log('Cannot continue without the configuration file', 'error');
       this._hasExited = true;
       return;
     }
     if (!Tools.fileExists(this._configurationFile)) {
-      LogConsole.log('Configuration file do not exist');
+      LogSystem.log('Configuration file do not exist');
       const destination = this._configurationFile;
       const source = require('path').normalize(__dirname + '/../../default.config.json');
-      LogConsole.log('Creating configuration file ...');
+      LogSystem.log('Creating configuration file ...');
       Tools.fileCopy(source, destination);
       if (!Tools.fileExists(destination)) {
-        LogConsole.log('Could not create the configuration file', 'error');
+        LogSystem.log('Could not create the configuration file', 'error');
         this._hasExited = true;
         return;
       }
-      LogConsole.log('Configuration file created', 'success');
+      LogSystem.log('Configuration file created', 'success');
     } else {
-      LogConsole.log('Configuration file already exists', 'success');
+      LogSystem.log('Configuration file already exists', 'success');
     }
 
-    LogConsole.log('Loading the configuration file ...');
+    LogSystem.log('Loading the configuration file ...');
     let newConfiguration: Configuration;
     try {
       newConfiguration = new Configuration(Tools.fileReadJson(this._configurationFile));
     } catch (err) {
-      LogConsole.log(err + '', 'error');
-      LogConsole.log('Could not read the configuration file', 'error');
+      LogSystem.log(err + '', 'error');
+      LogSystem.log('Could not read the configuration file', 'error');
       this._hasExited = true;
       return;
     }
 
-    LogConsole.log('Configuration file parsed and configuration object created', 'success');
+    LogSystem.log('Configuration file parsed and configuration object created', 'success');
     const publicDirectory = Tools.getDir(newConfiguration.public);
-    LogConsole.log('Checking public directory: ' + publicDirectory);
+    LogSystem.log('Checking public directory: ' + publicDirectory);
     if (!Tools.dirExists(publicDirectory)) {
-      LogConsole.log('Public directory do not exist');
+      LogSystem.log('Public directory do not exist');
       if (!Tools.dirRelativeTo(publicDirectory, this._rootDir)) {
-        LogConsole.log('Public directory is outside the root directory', 'warning');
-        LogConsole.log('The directory will not be created automatically', 'warning');
+        LogSystem.log('Public directory is outside the root directory', 'warning');
+        LogSystem.log('The directory will not be created automatically', 'warning');
       } else {
-        LogConsole.log('Creating public directory ...');
+        LogSystem.log('Creating public directory ...');
         Tools.dirCreateAll(publicDirectory);
         if (!Tools.dirExists(publicDirectory)) {
-          LogConsole.log('Could not create the public directory', 'error');
+          LogSystem.log('Could not create the public directory', 'error');
         }
       }
     } else {
-      LogConsole.log('Public directory already exists', 'success');
+      LogSystem.log('Public directory already exists', 'success');
+    }
+
+    if (
+      (typeof newConfiguration.log?.access.target == 'string' && newConfiguration.log?.access.target == 'file') ||
+      (Array.isArray(newConfiguration.log?.access.target) && newConfiguration.log?.access.target.includes('file'))
+    ) {
+      const accessLogDirectory = Tools.getDir(newConfiguration.log.access.path);
+      LogSystem.log('Log access writen in a file: ' + accessLogDirectory);
+      if (!Tools.dirExists(accessLogDirectory)) {
+        LogSystem.log('Access log directory do not exist');
+        if (!Tools.dirRelativeTo(accessLogDirectory, this._rootDir)) {
+          LogSystem.log('Access log directory is outside the root directory', 'warning');
+          LogSystem.log('The directory will not be created automatically', 'warning');
+        } else {
+          LogSystem.log('Creating access log directory ...');
+          Tools.dirCreateAll(accessLogDirectory);
+          if (!Tools.dirExists(accessLogDirectory)) {
+            LogSystem.log('Could not create the access log directory', 'error');
+          }
+        }
+      } else {
+        LogSystem.log('Access log directory already exists', 'success');
+      }
+    } else {
+      LogSystem.log('Access log not writen in a file');
+    }
+
+    if (
+      (typeof newConfiguration.log?.error.target == 'string' && newConfiguration.log?.error.target == 'file') ||
+      (Array.isArray(newConfiguration.log?.error.target) && newConfiguration.log?.error.target.includes('file'))
+    ) {
+      const errorLogDirectory = Tools.getDir(newConfiguration.log.error.path);
+      LogSystem.log('Log error writen in a file: ' + errorLogDirectory);
+      if (!Tools.dirExists(errorLogDirectory)) {
+        LogSystem.log('Error log directory do not exist');
+        if (!Tools.dirRelativeTo(errorLogDirectory, this._rootDir)) {
+          LogSystem.log('Error log directory is outside the root directory', 'warning');
+          LogSystem.log('The directory will not be created automatically', 'warning');
+        } else {
+          LogSystem.log('Creating error log directory ...');
+          Tools.dirCreateAll(errorLogDirectory);
+          if (!Tools.dirExists(errorLogDirectory)) {
+            LogSystem.log('Could not create the error log directory', 'error');
+          }
+        }
+      } else {
+        LogSystem.log('Error log directory already exists', 'success');
+      }
+    } else {
+      LogSystem.log('Error log not writen in a file');
     }
 
     this._hasExited = true;
@@ -254,6 +304,7 @@ export default class Wicked {
 
   start(): Wicked {
     this.logIntro();
+    this.core = new Core(this._configurationFile);
     this.core.start();
     return this;
   }

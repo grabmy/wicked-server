@@ -1,8 +1,12 @@
 {
-    "name": "default",
+    "name": "normal",
     "port": 3000,
     "public": "public/",
     "log": {
+        "console": {
+            "enabled": true,
+            "target": "console"
+        },
         "error": {
             "enabled": true,
             "target": "file",
