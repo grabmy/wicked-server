@@ -2,10 +2,12 @@ import express from 'express';
 import Core from './Core';
 import Configuration from './Configuration';
 import LogSystem from './LogSystem';
+import Tools from './Tools';
+import Script from './Script';
 
 export default class Server {
-  core!: Core | null;
-  configuration!: Configuration | null;
+  core: Core;
+  configuration: Configuration;
 
   app: any = null;
   server: any = null;
@@ -19,8 +21,8 @@ export default class Server {
     this.configuration = configuration;
 
     this.app = express();
+    this.app.use(this.beforeRequest);
     this.app.use(express.static(this.configuration?.public));
-    this.app.use(this.beforeRequest, this.handleRequest, this.afterRequest);
   }
 
   getPort(): number {
@@ -28,26 +30,75 @@ export default class Server {
   }
 
   start(): void {
-    this.server = this.app.listen(this.getPort(), () => {
-      LogSystem.log(`Start listening on port ` + this.getPort(), 'success');
-    });
+    try {
+      this.server = this.app.listen(this.getPort(), () => {
+        LogSystem.log(`Start listening on port ` + this.getPort(), 'success');
+      });
+      this.server.on('error', (error: any) => {
+        if (error.code === 'EADDRINUSE') {
+          LogSystem.log(error + '', 'critical');
+          this.core.stop();
+        } else {
+          this.core.logError?.log(error + '', 'error');
+        }
+      });
+    } catch (error) {
+      LogSystem.log(error + '', 'critical');
+    }
   }
 
   beforeRequest(request: any, response: any, next: any): void {
-    console.log('beforeRequest');
-    next();
+    let isNodeScript = false;
+    if (Tools.getUrlExtension(request.url) == 'node.js') {
+      isNodeScript = true;
+    }
+
+    response.on('finish', () => {
+      this.afterRequest(request, response, next);
+    });
+
+    if (isNodeScript) {
+      let success = false;
+      try {
+        const nodeScriptFile = this.configuration.public + request.url;
+        success = this.execute(nodeScriptFile, request, response);
+      } catch (error) {
+        this.core.logError?.log(error + '', 'error');
+      }
+      if (!success) {
+        next();
+      }
+    } else {
+      next();
+    }
+  }
+
+  execute(nodeScriptFile: string, request: any, response: any): boolean {
+    if (Tools.fileExists(nodeScriptFile)) {
+      try {
+        const pathAbsolute = require('path').resolve(nodeScriptFile);
+        const scriptFct = require(pathAbsolute);
+        const scriptInstance = new Script(this, request, response);
+        const result = scriptFct(scriptInstance);
+        response.send(scriptInstance.body);
+        return true;
+        // delete cache so the file is also executed next time
+        //require?.cache[pathAbsolute] = null;
+      } catch (error) {
+        this.core.logError?.log(error + '', 'error');
+        return false;
+      }
+    }
+    return false;
   }
 
   handleRequest(request: any, response: any, next: any): void {
-    console.log('handleRequest');
     next();
   }
 
   afterRequest(request: any, response: any, next: any): void {
     const accessLine = this.getClientIp(request) + ' ' + request.method + ' ' + response.statusCode + ' ' + request.url;
-    //const accessLine = request.method + ' ' + response.statusCode + ' ' + request.url;
-    console.log('accessLine = ' + accessLine);
-    this.core?.logAccess?.log(accessLine);
+    this.core.logAccess?.log(accessLine);
     next();
   }
 
@@ -58,6 +109,6 @@ export default class Server {
   stop(): void {
     // this.server
     this.server.close();
-    LogSystem.log('Server stoped', 'success');
+    LogSystem.log('Server stopped', 'success');
   }
 }

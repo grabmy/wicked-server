@@ -5,6 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = __importDefault(require("express"));
 var LogSystem_1 = __importDefault(require("./LogSystem"));
+var Tools_1 = __importDefault(require("./Tools"));
+var Script_1 = __importDefault(require("./Script"));
 var Server = /** @class */ (function () {
     function Server(core, configuration) {
         var _a;
@@ -16,8 +18,8 @@ var Server = /** @class */ (function () {
         this.core = core;
         this.configuration = configuration;
         this.app = (0, express_1.default)();
+        this.app.use(this.beforeRequest);
         this.app.use(express_1.default.static((_a = this.configuration) === null || _a === void 0 ? void 0 : _a.public));
-        this.app.use(this.beforeRequest, this.handleRequest, this.afterRequest);
     }
     Server.prototype.getPort = function () {
         var _a;
@@ -25,24 +27,79 @@ var Server = /** @class */ (function () {
     };
     Server.prototype.start = function () {
         var _this = this;
-        this.server = this.app.listen(this.getPort(), function () {
-            LogSystem_1.default.log("Start listening on port " + _this.getPort(), 'success');
-        });
+        try {
+            this.server = this.app.listen(this.getPort(), function () {
+                LogSystem_1.default.log("Start listening on port " + _this.getPort(), 'success');
+            });
+            this.server.on('error', function (error) {
+                var _a;
+                if (error.code === 'EADDRINUSE') {
+                    LogSystem_1.default.log(error + '', 'critical');
+                    _this.core.stop();
+                }
+                else {
+                    (_a = _this.core.logError) === null || _a === void 0 ? void 0 : _a.log(error + '', 'error');
+                }
+            });
+        }
+        catch (error) {
+            LogSystem_1.default.log(error + '', 'critical');
+        }
     };
     Server.prototype.beforeRequest = function (request, response, next) {
-        console.log('beforeRequest');
-        next();
+        var _this = this;
+        var _a;
+        var isNodeScript = false;
+        if (Tools_1.default.getUrlExtension(request.url) == 'node.js') {
+            isNodeScript = true;
+        }
+        response.on('finish', function () {
+            _this.afterRequest(request, response, next);
+        });
+        if (isNodeScript) {
+            var success = false;
+            try {
+                var nodeScriptFile = this.configuration.public + request.url;
+                success = this.execute(nodeScriptFile, request, response);
+            }
+            catch (error) {
+                (_a = this.core.logError) === null || _a === void 0 ? void 0 : _a.log(error + '', 'error');
+            }
+            if (!success) {
+                next();
+            }
+        }
+        else {
+            next();
+        }
+    };
+    Server.prototype.execute = function (nodeScriptFile, request, response) {
+        var _a;
+        if (Tools_1.default.fileExists(nodeScriptFile)) {
+            try {
+                var pathAbsolute = require('path').resolve(nodeScriptFile);
+                var scriptFct = require(pathAbsolute);
+                var scriptInstance = new Script_1.default(this, request, response);
+                var result = scriptFct(scriptInstance);
+                response.send(scriptInstance.body);
+                return true;
+                // delete cache so the file is also executed next time
+                //require?.cache[pathAbsolute] = null;
+            }
+            catch (error) {
+                (_a = this.core.logError) === null || _a === void 0 ? void 0 : _a.log(error + '', 'error');
+                return false;
+            }
+        }
+        return false;
     };
     Server.prototype.handleRequest = function (request, response, next) {
-        console.log('handleRequest');
         next();
     };
     Server.prototype.afterRequest = function (request, response, next) {
-        var _a, _b;
+        var _a;
         var accessLine = this.getClientIp(request) + ' ' + request.method + ' ' + response.statusCode + ' ' + request.url;
-        //const accessLine = request.method + ' ' + response.statusCode + ' ' + request.url;
-        console.log('accessLine = ' + accessLine);
-        (_b = (_a = this.core) === null || _a === void 0 ? void 0 : _a.logAccess) === null || _b === void 0 ? void 0 : _b.log(accessLine);
+        (_a = this.core.logAccess) === null || _a === void 0 ? void 0 : _a.log(accessLine);
         next();
     };
     Server.prototype.getClientIp = function (request) {
@@ -51,7 +108,7 @@ var Server = /** @class */ (function () {
     Server.prototype.stop = function () {
         // this.server
         this.server.close();
-        LogSystem_1.default.log('Server stoped', 'success');
+        LogSystem_1.default.log('Server stopped', 'success');
     };
     return Server;
 }());

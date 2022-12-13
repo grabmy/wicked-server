@@ -7,9 +7,11 @@ const originalDir = process.cwd();
 
 describe('Simple commands', () => {
   test('Console help', async () => {
+    await Tools.delay(200);
+
     // Run
     const server = new Wicked(['--silent', '--no-exit', '--help']);
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -21,6 +23,8 @@ describe('Simple commands', () => {
   });
 
   test('Create mode in an empty directory', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/empty/');
@@ -30,7 +34,7 @@ describe('Simple commands', () => {
 
     // Run
     const server = new Wicked(['--silent', '--no-exit', '--create']);
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -53,6 +57,8 @@ describe('Simple commands', () => {
   });
 
   test('Create mode with existing config', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/simple/');
@@ -64,7 +70,7 @@ describe('Simple commands', () => {
 
     // Run
     const server = new Wicked(['--silent', '--no-exit', '--create']);
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -91,6 +97,8 @@ describe('Simple commands', () => {
   });
 
   test('Create mode with complicated config path', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/empty/');
@@ -102,7 +110,7 @@ describe('Simple commands', () => {
 
     // Run
     const server = new Wicked(['--silent', '--no-exit', '--create', '-config', 'config/simple/test.json']);
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();

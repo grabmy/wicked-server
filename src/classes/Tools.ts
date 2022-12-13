@@ -261,38 +261,56 @@ export default class Tools {
           response,
           error: null,
           ok: true,
-          code: response.status,
+          code: response.status || 500,
           mimeType: getMimeType(response),
           charset: getCharset(response),
-          html: response.data,
+          data: response.data,
           json: null,
         };
         return result;
       })
       .catch(function (error: AxiosError) {
-        let html: String = '';
-        if (error.response?.data instanceof String) {
-          html = error.response.data;
-        }
+        const data = error.response?.data;
+
         let contentType = '';
         if (typeof error.response?.headers.getContentType === 'function') {
           contentType = error.response?.headers.getContentType()?.toString() || '';
         } else if (typeof error.response?.headers.getContentType === 'string') {
           contentType = error.response?.headers.getContentType || '';
         }
-
         const result: RequestResponse = {
           response: error.response || null,
           error,
           ok: false,
-          code: error.status || 0,
+          code: error.response?.status || 500,
           mimeType: getMimeType(error.response),
           charset: getCharset(error.response),
-          html: html,
+          data,
           json: null,
         };
         return result;
       });
+  }
+
+  static getUrlFilename(url: string): string {
+    if (url.endsWith('/')) {
+      return '';
+    }
+    const parsed = require('url').parse(url);
+    return require('path').basename(parsed.pathname);
+  }
+
+  static getUrlExtension(url: string): string {
+    const filename = Tools.getUrlFilename(url);
+    if (filename == '') {
+      return '';
+    }
+    const parts = filename.split('.');
+    if (parts.length <= 0) {
+      return '';
+    }
+    parts.shift();
+    return parts.join('.');
   }
 }
 
@@ -301,7 +319,7 @@ interface RequestResponse {
   error: AxiosError | null;
   ok: boolean;
   code: number;
-  html: String;
+  data: any;
   mimeType: String;
   charset: String;
   json: Object | null;

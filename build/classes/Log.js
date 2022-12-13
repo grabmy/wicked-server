@@ -16,7 +16,6 @@ var Log = /** @class */ (function () {
         this.noColors = false;
         this.noDateTime = false;
         this.hasCriticalError = false;
-        this.hasError = false;
         this.isSilent = false;
         this.name = '';
         this._target = [];
@@ -58,6 +57,13 @@ var Log = /** @class */ (function () {
                 }
             }
             this._enabled = !!enabled;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Log.prototype, "hasError", {
+        get: function () {
+            return this._hasError;
         },
         enumerable: false,
         configurable: true
@@ -140,8 +146,11 @@ var Log = /** @class */ (function () {
         this.noColors = false;
         this.noDateTime = false;
         this.hasCriticalError = false;
-        this.hasError = false;
         this.isSilent = false;
+        this._hasError = false;
+        this._enabled = true;
+        this._file = '';
+        this._target = [];
     };
     Log.prototype.getColor = function (type) {
         if (type === void 0) { type = ''; }
@@ -174,37 +183,32 @@ var Log = /** @class */ (function () {
         var _this = this;
         if (type === void 0) { type = 'regular'; }
         if (!this._enabled) {
-            console.log('access.log: enabled = false');
             return;
         }
         var lines = message.split('\n');
         lines.forEach(function (line) {
-            var finalMessage = (_this.getDateTime() != '' ? _this.getDateTime() + '\t' : '') + type + '\t' + line;
+            var finalMessage = (_this.getDateTime() != '' ? _this.getDateTime() + '\t' : '') + line;
             if (!_this.isSilent) {
-                var consoleMessage = (_this.getDateTime() != '' ? _this.getDateTime() + '\t' : '') + line;
-                _this.send(_this.getColor(type), consoleMessage);
+                _this.send(_this.getColor(type), finalMessage);
             }
             _this.output.push(finalMessage);
         });
         if (type == 'critical') {
-            this.hasError = true;
+            this._hasError = true;
             this.hasCriticalError = true;
         }
         else if (type == 'error') {
-            this.hasError = true;
+            this._hasError = true;
         }
     };
     Log.prototype.send = function (color, line) {
         var _this = this;
-        console.log('access.send: line = ' + line);
-        console.log(this.target);
         this.target.forEach(function (type) {
             switch (type) {
                 case LogTarget.Console:
-                    console.log(color, line);
+                    console.log(line.trim());
                     break;
                 case LogTarget.File:
-                    console.log('access.send: target = file, ' + _this.file);
                     require('fs').appendFileSync(_this.file, line.trim() + '\n');
                     break;
             }

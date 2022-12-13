@@ -1,7 +1,10 @@
 {
-    "name": "mime",
+    "name": "script",
     "port": 3000,
     "public": "public/",
+    "script": {
+        "extension": "node.js"
+    },
     "log": {
         "error": {
             "enabled": true,

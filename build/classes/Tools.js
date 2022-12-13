@@ -298,20 +298,17 @@ var Tools = /** @class */ (function () {
                                 response: response,
                                 error: null,
                                 ok: true,
-                                code: response.status,
+                                code: response.status || 500,
                                 mimeType: getMimeType(response),
                                 charset: getCharset(response),
-                                html: response.data,
+                                data: response.data,
                                 json: null,
                             };
                             return result;
                         })
                             .catch(function (error) {
-                            var _a, _b, _c, _d, _e, _f;
-                            var html = '';
-                            if (((_a = error.response) === null || _a === void 0 ? void 0 : _a.data) instanceof String) {
-                                html = error.response.data;
-                            }
+                            var _a, _b, _c, _d, _e, _f, _g;
+                            var data = (_a = error.response) === null || _a === void 0 ? void 0 : _a.data;
                             var contentType = '';
                             if (typeof ((_b = error.response) === null || _b === void 0 ? void 0 : _b.headers.getContentType) === 'function') {
                                 contentType = ((_d = (_c = error.response) === null || _c === void 0 ? void 0 : _c.headers.getContentType()) === null || _d === void 0 ? void 0 : _d.toString()) || '';
@@ -323,10 +320,10 @@ var Tools = /** @class */ (function () {
                                 response: error.response || null,
                                 error: error,
                                 ok: false,
-                                code: error.status || 0,
+                                code: ((_g = error.response) === null || _g === void 0 ? void 0 : _g.status) || 500,
                                 mimeType: getMimeType(error.response),
                                 charset: getCharset(error.response),
-                                html: html,
+                                data: data,
                                 json: null,
                             };
                             return result;
@@ -335,6 +332,25 @@ var Tools = /** @class */ (function () {
                 }
             });
         });
+    };
+    Tools.getUrlFilename = function (url) {
+        if (url.endsWith('/')) {
+            return '';
+        }
+        var parsed = require('url').parse(url);
+        return require('path').basename(parsed.pathname);
+    };
+    Tools.getUrlExtension = function (url) {
+        var filename = Tools.getUrlFilename(url);
+        if (filename == '') {
+            return '';
+        }
+        var parts = filename.split('.');
+        if (parts.length <= 0) {
+            return '';
+        }
+        parts.shift();
+        return parts.join('.');
     };
     return Tools;
 }());

@@ -1,6 +1,5 @@
 import Configuration from './Configuration';
 import Server from './Server';
-import Execution from './Execution';
 import LogSystem from './LogSystem';
 import Log from './Log';
 import Tools from './Tools';
@@ -21,8 +20,6 @@ const logErrorDefault = {
 
 export default class Core {
   public configuration!: Configuration | null;
-
-  public execution!: Execution | null;
 
   public server!: Server | null;
 

@@ -11,7 +11,6 @@ export default class Log {
   public noColors: boolean = false;
   public noDateTime: boolean = false;
   public hasCriticalError: boolean = false;
-  public hasError: boolean = false;
   public isSilent: boolean = false;
   public name = '';
 
@@ -46,6 +45,10 @@ export default class Log {
 
   get enabled(): boolean {
     return this._enabled;
+  }
+
+  get hasError(): boolean {
+    return this._hasError;
   }
 
   set enabled(enabled: boolean) {
@@ -134,8 +137,11 @@ export default class Log {
     this.noColors = false;
     this.noDateTime = false;
     this.hasCriticalError = false;
-    this.hasError = false;
     this.isSilent = false;
+    this._hasError = false;
+    this._enabled = true;
+    this._file = '';
+    this._target = [];
   }
 
   getColor(type: string = '') {
@@ -169,37 +175,32 @@ export default class Log {
 
   log(message: string, type: string = 'regular'): void {
     if (!this._enabled) {
-      console.log('access.log: enabled = false');
       return;
     }
     const lines = message.split('\n');
     lines.forEach((line) => {
-      const finalMessage = (this.getDateTime() != '' ? this.getDateTime() + '\t' : '') + type + '\t' + line;
+      const finalMessage = (this.getDateTime() != '' ? this.getDateTime() + '\t' : '') + line;
       if (!this.isSilent) {
-        const consoleMessage = (this.getDateTime() != '' ? this.getDateTime() + '\t' : '') + line;
-        this.send(this.getColor(type), consoleMessage);
+        this.send(this.getColor(type), finalMessage);
       }
       this.output.push(finalMessage);
     });
 
     if (type == 'critical') {
-      this.hasError = true;
+      this._hasError = true;
       this.hasCriticalError = true;
     } else if (type == 'error') {
-      this.hasError = true;
+      this._hasError = true;
     }
   }
 
   private send(color: string, line: string): void {
-    console.log('access.send: line = ' + line);
-    console.log(this.target);
     this.target.forEach((type) => {
       switch (type) {
         case LogTarget.Console:
-          console.log(color, line);
+          console.log(line.trim());
           break;
         case LogTarget.File:
-          console.log('access.send: target = file, ' + this.file);
           require('fs').appendFileSync(this.file, line.trim() + '\n');
           break;
       }

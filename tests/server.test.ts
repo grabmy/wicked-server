@@ -6,11 +6,15 @@ import Configuration from '../src/classes/Configuration';
 
 const originalDir = process.cwd();
 let server: Wicked | null;
+let serverError: Wicked | null;
 
 describe('Run server', () => {
   beforeEach(() => {
     if (server?.isRunning) {
       server.stop();
+    }
+    if (serverError?.isRunning) {
+      serverError.stop();
     }
     process.chdir(originalDir);
   });
@@ -19,19 +23,26 @@ describe('Run server', () => {
     if (server?.isRunning) {
       server.stop();
     }
+    if (serverError?.isRunning) {
+      serverError.stop();
+    }
     process.chdir(originalDir);
   });
 
   test('Server in an empty directory', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/empty/');
     Tools.fileDelete('./wicked.config.json');
     Tools.dirDelete('./public');
 
+    await Tools.delay(200);
+
     // Run
     server = new Wicked(['--silent', '--no-exit']);
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -49,6 +60,8 @@ describe('Run server', () => {
   });
 
   test('Simple server without public directory', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/simple/');
@@ -56,7 +69,7 @@ describe('Run server', () => {
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -73,13 +86,17 @@ describe('Run server', () => {
   });
 
   test('Normal server', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/normal/');
+    Tools.fileDelete('log/access.log');
+    Tools.fileDelete('log/error.log');
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -94,7 +111,7 @@ describe('Run server', () => {
 
     // Stop
     server.stop();
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
@@ -102,17 +119,21 @@ describe('Run server', () => {
     expect(server.hasRun).toBe(true);
 
     // Clean
+    Tools.fileDelete('log/access.log');
+    Tools.fileDelete('log/error.log');
     process.chdir(originalDir);
   });
 
   test('Mime types', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/mime/');
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
-    await Tools.delay(500);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -127,53 +148,53 @@ describe('Run server', () => {
     // root page
     result = await Tools.get('http://localhost:3000/index.html');
     expect(result.ok).toBe(true);
-    expect(result.html).toContain('<title>Default</title>');
+    expect(result.data).toContain('<title>Default</title>');
 
     // gif
     result = await Tools.get('http://localhost:3000/assets/nyan.gif');
     expect(result.ok).toBe(true);
     expect(result.mimeType).toBe('image/gif');
-    expect(result.html).not.toBe('');
+    expect(result.data).not.toBe('');
 
     // png
     result = await Tools.get('http://localhost:3000/assets/amongus.png');
     expect(result.ok).toBe(true);
     expect(result.mimeType).toBe('image/png');
-    expect(result.html).not.toBe('');
+    expect(result.data).not.toBe('');
 
     // jpg
     result = await Tools.get('http://localhost:3000/assets/flower.jpg');
     expect(result.ok).toBe(true);
     expect(result.mimeType).toBe('image/jpeg');
-    expect(result.html).not.toBe('');
+    expect(result.data).not.toBe('');
 
     // ico
     result = await Tools.get('http://localhost:3000/assets/favicon.ico');
     expect(result.ok).toBe(true);
     expect(result.mimeType).toBe('image/x-icon');
-    expect(result.html).not.toBe('');
+    expect(result.data).not.toBe('');
 
     // font
     result = await Tools.get('http://localhost:3000/assets/font.woff2');
     expect(result.ok).toBe(true);
     expect(result.mimeType).toBe('font/woff2');
-    expect(result.html).not.toBe('');
+    expect(result.data).not.toBe('');
 
     // js
     result = await Tools.get('http://localhost:3000/assets/script.js');
     expect(result.ok).toBe(true);
     expect(result.mimeType).toBe('application/javascript');
-    expect(result.html).not.toBe('');
+    expect(result.data).not.toBe('');
 
     // css
     result = await Tools.get('http://localhost:3000/assets/style.css');
     expect(result.ok).toBe(true);
     expect(result.mimeType).toBe('text/css');
-    expect(result.html).not.toBe('');
+    expect(result.data).not.toBe('');
 
     // Stop
     server.stop();
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
@@ -185,13 +206,15 @@ describe('Run server', () => {
   });
 
   test('Default pages', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/mime/');
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
-    await Tools.delay(500);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -206,12 +229,12 @@ describe('Run server', () => {
     // default page
     result = await Tools.get('http://localhost:3000/');
     expect(result.ok).toBe(true);
-    expect(result.html).toContain('<title>Default</title>');
+    expect(result.data).toContain('<title>Default</title>');
 
     // default page without slash
     result = await Tools.get('http://localhost:3000');
     expect(result.ok).toBe(true);
-    expect(result.html).toContain('<title>Default</title>');
+    expect(result.data).toContain('<title>Default</title>');
 
     // assets
     result = await Tools.get('http://localhost:3000/assets');
@@ -220,11 +243,11 @@ describe('Run server', () => {
     // empty 404 page
     result = await Tools.get('http://localhost:3000/404/page/nowhere.xxx');
     expect(result.ok).toBe(false);
-    expect(result.html).toBe('');
+    expect(result.data).toContain('Error');
 
     // Stop
     server.stop();
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
@@ -236,13 +259,17 @@ describe('Run server', () => {
   });
 
   test('Log', async () => {
+    await Tools.delay(200);
+
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/log/');
+    Tools.fileDelete('./log/access.log');
+    Tools.fileDelete('./log/error.log');
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
-    await Tools.delay(500);
+    await Tools.delay(200);
 
     // Check
     expect(server).not.toBeNull();
@@ -257,13 +284,27 @@ describe('Run server', () => {
     // default page
     result = await Tools.get('http://localhost:3000/');
     expect(result.ok).toBe(true);
+    expect(result.code).toBe(200);
     expect(Tools.fileExists('log/access.log')).toBe(true);
-    console.log(Tools.fileRead('log/access.log'));
-    expect(Tools.fileRead('log/access.log')).toContain('200');
+    expect(Tools.fileRead('log/access.log')).toContain('GET 200 /');
+
+    // Error page
+    result = await Tools.get('http://localhost:3000/error/404.xxx');
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe(404);
+    expect(Tools.fileRead('log/access.log')).toContain('GET 200 /');
+    expect(Tools.fileRead('log/access.log')).toContain('GET 404 /error/404.xxx');
+
+    // Error page
+    result = await Tools.get('http://localhost:3000/error/404.xxx');
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe(404);
+    expect(Tools.fileRead('log/access.log')).toContain('GET 200 /');
+    expect(Tools.fileRead('log/access.log')).toContain('GET 404 /error/404.xxx');
 
     // Stop
     server.stop();
-    await Tools.delay(100);
+    await Tools.delay(200);
 
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
@@ -271,6 +312,48 @@ describe('Run server', () => {
     expect(server.hasRun).toBe(true);
 
     // Clean
+    Tools.fileDelete('./log/access.log');
+    Tools.fileDelete('./log/error.log');
+    process.chdir(originalDir);
+  });
+
+  test('Port already in use', async () => {
+    await Tools.delay(200);
+
+    // Prepare
+    process.chdir(originalDir);
+    process.chdir('./tests/log/');
+    Tools.fileDelete('./log/access.log');
+    Tools.fileDelete('./log/error.log');
+
+    // Run
+    server = new Wicked(['--silent', '--no-exit']);
+    await Tools.delay(200);
+
+    // Check
+    expect(server).not.toBeNull();
+    expect(LogSystem.output.length).toBeGreaterThan(6);
+    expect(LogSystem.hasCriticalError).toBe(false);
+    expect(LogSystem.hasError).toBe(false);
+    expect(server.core.configuration?.name).toBe('log');
+    expect(server.isRunning).toBe(true);
+
+    // server error
+    serverError = new Wicked(['--silent', '--no-exit']);
+    await Tools.delay(200);
+    expect(serverError).not.toBeNull();
+    expect(LogSystem.output.length).toBeGreaterThan(6);
+    expect(LogSystem.hasCriticalError).toBe(true);
+    expect(LogSystem.hasError).toBe(true);
+    expect(serverError.isRunning).toBe(false);
+
+    // Stop
+    server.stop();
+    await Tools.delay(200);
+
+    // Clean
+    Tools.fileDelete('./log/access.log');
+    Tools.fileDelete('./log/error.log');
     process.chdir(originalDir);
   });
 });
