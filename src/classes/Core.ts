@@ -105,13 +105,13 @@ export default class Core {
     this.server.start();
   }
 
-  stop(): void {
+  async stop(): Promise<any> {
     if (!this._isRunning) {
       LogSystem.log('Stop: Web server is not running');
       return;
     }
     LogSystem.log('Web server is stopping');
-    this.server?.stop();
+    await this.server?.stop();
     this._isRunning = false;
   }
 }

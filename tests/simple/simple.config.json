@@ -1,17 +1,17 @@
 {
-    "name": "default",
+    "name": "simple",
     "port": 3000,
-    "public": "public/",
+    "public": "public/www/",
     "log": {
         "error": {
             "enabled": true,
             "target": "file",
-            "path": "log/error.log"
+            "path": "log/error/error.log"
         },
         "access": {
             "enabled": true,
             "target": "file",
-            "path": "log/access.log"
+            "path": "log/access/access.log"
         }
     }
 }

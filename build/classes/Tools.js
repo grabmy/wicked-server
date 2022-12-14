@@ -77,6 +77,80 @@ var Tools = /** @class */ (function () {
     Tools.delay = function (ms) {
         return new Promise(function (resolve) { return setTimeout(resolve, ms); });
     };
+    Tools.checkPort = function (port) {
+        return __awaiter(this, void 0, void 0, function () {
+            var net, server, remaining, hasResult, result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        net = require('net');
+                        server = net.createServer();
+                        remaining = 10000;
+                        hasResult = false;
+                        result = false;
+                        server.once('error', function (error) {
+                            if (error.code === 'EADDRINUSE') {
+                                hasResult = true;
+                                result = false;
+                            }
+                        });
+                        server.once('listening', function () {
+                            hasResult = true;
+                            result = true;
+                        });
+                        return [4 /*yield*/, server.listen(port)];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        if (!(remaining > 0)) return [3 /*break*/, 4];
+                        remaining -= 100;
+                        return [4 /*yield*/, Tools.delay(100)];
+                    case 3:
+                        _a.sent();
+                        if (hasResult) {
+                            return [3 /*break*/, 4];
+                        }
+                        return [3 /*break*/, 2];
+                    case 4: return [4 /*yield*/, server.close()];
+                    case 5:
+                        _a.sent();
+                        return [2 /*return*/, result];
+                }
+            });
+        });
+    };
+    Tools.waitForPort = function (port, timeout) {
+        if (timeout === void 0) { timeout = 10000; }
+        return __awaiter(this, void 0, void 0, function () {
+            var remaining, result, available;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        remaining = timeout;
+                        result = false;
+                        _a.label = 1;
+                    case 1:
+                        if (!(remaining > 0)) return [3 /*break*/, 4];
+                        remaining -= 100;
+                        return [4 /*yield*/, Tools.delay(100)];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, Tools.checkPort(port)];
+                    case 3:
+                        available = _a.sent();
+                        if (available) {
+                            result = true;
+                            return [3 /*break*/, 4];
+                        }
+                        return [3 /*break*/, 1];
+                    case 4:
+                        console.log('waitForPort: result = ' + result);
+                        return [2 /*return*/, result];
+                }
+            });
+        });
+    };
     /*************************************************************
      * File
      ************************************************************/
@@ -91,7 +165,12 @@ var Tools = /** @class */ (function () {
             return require('fs').existsSync(path);
         }
         catch (err) {
-            // LogConsole.log('' + err, 'error');
+            if (err.code === 'ENOENT') {
+                return false;
+            }
+            else {
+                console.log('fileExists: ' + err);
+            }
             return false;
         }
     };
@@ -121,6 +200,13 @@ var Tools = /** @class */ (function () {
             return true;
         }
         catch (err) {
+            if (err.code === 'ENOENT') {
+                return false;
+            }
+            else {
+                console.log('fileDelete: code = ' + err.code);
+                console.log('fileDelete: ' + err);
+            }
             LogSystem_1.default.log('' + err, 'error');
             return false;
         }
@@ -129,10 +215,15 @@ var Tools = /** @class */ (function () {
         if (!Tools.pathValidation(path)) {
             return false;
         }
+        if (!Tools.fileExists(path)) {
+            LogSystem_1.default.log('Cannot read non-existing file: ' + path, 'error');
+            return false;
+        }
         try {
             return fs.readFileSync(path).toString();
         }
         catch (err) {
+            console.log('fileRead: Error: ' + err);
             LogSystem_1.default.log('' + err, 'error');
             return false;
         }
@@ -197,8 +288,13 @@ var Tools = /** @class */ (function () {
             return false;
         }
         var dir = Tools.getDir(path);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir);
+        try {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir);
+            }
+        }
+        catch (err) {
+            console.log('dirCreate: Error: ' + err);
         }
         return fs.existsSync(dir);
     };
@@ -227,10 +323,26 @@ var Tools = /** @class */ (function () {
             return true;
         }
         try {
+            /*
+            fs.readdir(path, (err: any, files: any) => {
+              if (err) throw err;
+              for (const file of files) {
+                require('fs').unlink(require('path').join(path, file), (err: any) => {
+                  console.log('dirDelete: delete file: ' + err);
+                });
+              }
+            });
+            */
             fs.rmdirSync(path, { recursive: recursive });
             return true;
         }
         catch (err) {
+            if (err.code === 'ENOENT') {
+                return false;
+            }
+            else {
+                console.log('dirDelete: ' + err);
+            }
             LogSystem_1.default.log('' + err, 'error');
             return false;
         }

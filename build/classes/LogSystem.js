@@ -13,7 +13,6 @@ var LogSystem = /** @class */ (function () {
         LogSystem.noDateTime = false;
         LogSystem.hasCriticalError = false;
         LogSystem.hasError = false;
-        LogSystem.isSilent = false;
     };
     LogSystem.getColor = function (type) {
         if (type === void 0) { type = ''; }

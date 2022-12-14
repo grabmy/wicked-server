@@ -9,7 +9,7 @@ let server: Wicked | null;
 let serverError: Wicked | null;
 
 describe('Run server', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     if (server?.isRunning) {
       server.stop();
     }
@@ -17,9 +17,11 @@ describe('Run server', () => {
       serverError.stop();
     }
     process.chdir(originalDir);
+    LogSystem.reset();
+    await Tools.waitForPort(3000);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     if (server?.isRunning) {
       server.stop();
     }
@@ -27,10 +29,13 @@ describe('Run server', () => {
       serverError.stop();
     }
     process.chdir(originalDir);
+    LogSystem.reset();
+    await Tools.waitForPort(3000);
   });
 
   test('Server in an empty directory', async () => {
-    await Tools.delay(200);
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
@@ -38,9 +43,8 @@ describe('Run server', () => {
     Tools.fileDelete('./wicked.config.json');
     Tools.dirDelete('./public');
 
-    await Tools.delay(200);
-
     // Run
+    LogSystem.reset();
     server = new Wicked(['--silent', '--no-exit']);
     await Tools.delay(200);
 
@@ -51,6 +55,7 @@ describe('Run server', () => {
     expect(server.isRunning).toBe(false);
     expect(server.hasRun).toBe(false);
     expect(LogSystem.output.join(' ')).toContain('Cannot start server with no configuration loaded');
+    console.log('server.test.ts:55 fileExists ' + Tools.fileExists('./wicked.config.json'));
     expect(Tools.fileExists('./wicked.config.json')).toBe(false);
 
     // Clean
@@ -60,7 +65,8 @@ describe('Run server', () => {
   });
 
   test('Simple server without public directory', async () => {
-    await Tools.delay(200);
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
@@ -86,7 +92,8 @@ describe('Run server', () => {
   });
 
   test('Normal server', async () => {
-    await Tools.delay(200);
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
@@ -125,7 +132,8 @@ describe('Run server', () => {
   });
 
   test('Mime types', async () => {
-    await Tools.delay(200);
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
@@ -206,7 +214,8 @@ describe('Run server', () => {
   });
 
   test('Default pages', async () => {
-    await Tools.delay(200);
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
@@ -258,67 +267,9 @@ describe('Run server', () => {
     process.chdir(originalDir);
   });
 
-  test('Log', async () => {
-    await Tools.delay(200);
-
-    // Prepare
-    process.chdir(originalDir);
-    process.chdir('./tests/log/');
-    Tools.fileDelete('./log/access.log');
-    Tools.fileDelete('./log/error.log');
-
-    // Run
-    server = new Wicked(['--silent', '--no-exit']);
-    await Tools.delay(200);
-
-    // Check
-    expect(server).not.toBeNull();
-    expect(LogSystem.output.length).toBeGreaterThan(6);
-    expect(LogSystem.hasCriticalError).toBe(false);
-    expect(LogSystem.hasError).toBe(false);
-    expect(server.core.configuration?.name).toBe('log');
-    expect(server.isRunning).toBe(true);
-
-    let result;
-
-    // default page
-    result = await Tools.get('http://localhost:3000/');
-    expect(result.ok).toBe(true);
-    expect(result.code).toBe(200);
-    expect(Tools.fileExists('log/access.log')).toBe(true);
-    expect(Tools.fileRead('log/access.log')).toContain('GET 200 /');
-
-    // Error page
-    result = await Tools.get('http://localhost:3000/error/404.xxx');
-    expect(result.ok).toBe(false);
-    expect(result.code).toBe(404);
-    expect(Tools.fileRead('log/access.log')).toContain('GET 200 /');
-    expect(Tools.fileRead('log/access.log')).toContain('GET 404 /error/404.xxx');
-
-    // Error page
-    result = await Tools.get('http://localhost:3000/error/404.xxx');
-    expect(result.ok).toBe(false);
-    expect(result.code).toBe(404);
-    expect(Tools.fileRead('log/access.log')).toContain('GET 200 /');
-    expect(Tools.fileRead('log/access.log')).toContain('GET 404 /error/404.xxx');
-
-    // Stop
-    server.stop();
-    await Tools.delay(200);
-
-    expect(LogSystem.hasCriticalError).toBe(false);
-    expect(LogSystem.hasError).toBe(false);
-    expect(server.isRunning).toBe(false);
-    expect(server.hasRun).toBe(true);
-
-    // Clean
-    Tools.fileDelete('./log/access.log');
-    Tools.fileDelete('./log/error.log');
-    process.chdir(originalDir);
-  });
-
   test('Port already in use', async () => {
-    await Tools.delay(200);
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);

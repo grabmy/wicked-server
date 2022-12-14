@@ -58,14 +58,17 @@ export default class Server {
     });
 
     if (isNodeScript) {
-      let success = false;
+      let stop = false;
       try {
         const nodeScriptFile = this.configuration.public + request.url;
-        success = this.execute(nodeScriptFile, request, response);
+        stop = this.execute(nodeScriptFile, request, response);
       } catch (error) {
         this.core.logError?.log(error + '', 'error');
+        response.statusCode = 500;
+        response.send('');
+        stop = true;
       }
-      if (!success) {
+      if (!stop) {
         next();
       }
     } else {
@@ -75,19 +78,12 @@ export default class Server {
 
   execute(nodeScriptFile: string, request: any, response: any): boolean {
     if (Tools.fileExists(nodeScriptFile)) {
-      try {
-        const pathAbsolute = require('path').resolve(nodeScriptFile);
-        const scriptFct = require(pathAbsolute);
-        const scriptInstance = new Script(this, request, response);
-        const result = scriptFct(scriptInstance);
-        response.send(scriptInstance.body);
-        return true;
-        // delete cache so the file is also executed next time
-        //require?.cache[pathAbsolute] = null;
-      } catch (error) {
-        this.core.logError?.log(error + '', 'error');
-        return false;
-      }
+      const pathAbsolute = require('path').resolve(nodeScriptFile);
+      const scriptFct = require(pathAbsolute);
+      const scriptInstance = new Script(this, request, response);
+      const result = scriptFct(scriptInstance);
+      response.send(scriptInstance.body);
+      return true;
     }
     return false;
   }
@@ -106,9 +102,9 @@ export default class Server {
     return request.headers['x-forwarded-for'] || request.socket.remoteAddress;
   }
 
-  stop(): void {
+  async stop(): Promise<any> {
     // this.server
-    this.server.close();
+    await this.server.close();
     LogSystem.log('Server stopped', 'success');
   }
 }

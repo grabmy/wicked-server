@@ -47,6 +47,18 @@ describe('Tools', () => {
       expect(startDateTime).toBeLessThan(endDateTime);
       expect(endDateTime / 1000).toBeCloseTo(startDateTime / 1000 + 2, 1);
     });
+
+    test('Wait for port', async () => {
+      const startDateTime = new Date().getTime();
+      let available = await Tools.waitForPort(9999);
+      expect(available).toBe(true);
+      available = await Tools.waitForPort(9999);
+      expect(available).toBe(true);
+      available = await Tools.waitForPort(9999);
+      expect(available).toBe(true);
+      const endDateTime = new Date().getTime();
+      expect(startDateTime / 10000).toBeCloseTo(endDateTime / 10000, 0);
+    });
   });
 
   describe('File', () => {

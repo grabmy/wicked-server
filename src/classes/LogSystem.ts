@@ -14,7 +14,6 @@ export default class LogSystem {
     LogSystem.noDateTime = false;
     LogSystem.hasCriticalError = false;
     LogSystem.hasError = false;
-    LogSystem.isSilent = false;
   }
 
   static getColor(type: string = '') {

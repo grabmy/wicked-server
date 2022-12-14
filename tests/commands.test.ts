@@ -6,6 +6,27 @@ import Configuration from '../src/classes/Configuration';
 const originalDir = process.cwd();
 
 describe('Simple commands', () => {
+  beforeEach(async () => {
+    process.chdir(originalDir);
+    LogSystem.reset();
+    await Tools.waitForPort(3000);
+  });
+
+  afterEach(async () => {
+    process.chdir(originalDir);
+    Tools.dirDelete('./public/www/');
+    Tools.dirDelete('./public');
+    Tools.dirDelete('./log/access/');
+    Tools.dirDelete('./log/error/');
+    Tools.dirDelete('./log');
+    Tools.fileDelete('./config/simple/test.json');
+    Tools.dirDelete('./config/simple/');
+    Tools.dirDelete('./config/');
+
+    LogSystem.reset();
+    await Tools.waitForPort(3000);
+  });
+
   test('Console help', async () => {
     await Tools.delay(200);
 
@@ -53,7 +74,6 @@ describe('Simple commands', () => {
     Tools.fileDelete('./wicked.config.json');
     Tools.dirDelete('./public');
     Tools.dirDelete('./log');
-    process.chdir(originalDir);
   });
 
   test('Create mode with existing config', async () => {
@@ -78,9 +98,9 @@ describe('Simple commands', () => {
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(server.isRunning).toBe(false);
     expect(server.hasRun).toBe(false);
-    expect(Tools.fileExists('./wicked.config.json')).toBe(true);
+    expect(Tools.fileExists('./simple.config.json')).toBe(true);
 
-    const newConfiguration: Configuration = Tools.fileReadJson('./wicked.config.json');
+    const newConfiguration: Configuration = Tools.fileReadJson('./simple.config.json');
     expect(newConfiguration.name).toBe('simple');
 
     expect(Tools.dirExists('./public/www/')).toBe(true);
@@ -93,11 +113,10 @@ describe('Simple commands', () => {
     Tools.dirDelete('./log/access/');
     Tools.dirDelete('./log/error/');
     Tools.dirDelete('./log/');
-    process.chdir(originalDir);
   });
 
   test('Create mode with complicated config path', async () => {
-    await Tools.delay(200);
+    await Tools.delay(2000);
 
     // Prepare
     process.chdir(originalDir);
@@ -132,6 +151,5 @@ describe('Simple commands', () => {
     Tools.dirDelete('./config/');
     Tools.dirDelete('./public/');
     Tools.dirDelete('./log/');
-    process.chdir(originalDir);
   });
 });

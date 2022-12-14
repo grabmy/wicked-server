@@ -8,35 +8,43 @@ const originalDir = process.cwd();
 let server: Wicked | null;
 
 describe('Run node script', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    LogSystem.reset();
     if (server?.isRunning) {
       server.stop();
     }
     process.chdir(originalDir);
+    await Tools.waitForPort(3000);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    LogSystem.reset();
     if (server?.isRunning) {
       server.stop();
     }
     process.chdir(originalDir);
+    await Tools.waitForPort(3000);
   });
 
   test('Request node script', async () => {
-    await Tools.delay(200);
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/script/');
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
+    LogSystem.reset();
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
+    await Tools.delay(100);
 
     // Check
     expect(server).not.toBeNull();
     expect(LogSystem.output.length).toBeGreaterThan(6);
+
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
     expect(server.isRunning).toBe(true);
@@ -52,18 +60,19 @@ describe('Run node script', () => {
     // Clean
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
-    Tools.dirDelete('./public');
     process.chdir(originalDir);
   });
 
   test('Change status code', async () => {
-    await Tools.delay(200);
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
     process.chdir('./tests/script/');
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
+    LogSystem.reset();
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
@@ -124,15 +133,46 @@ describe('Run node script', () => {
     // Clean
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
-    Tools.dirDelete('./public');
     process.chdir(originalDir);
   });
 
   // Error in script
 
+  test('Error in script', async () => {
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
+
+    // Prepare
+    process.chdir(originalDir);
+    process.chdir('./tests/script/');
+    Tools.fileDelete('./log/access.log');
+    Tools.fileDelete('./log/error.log');
+    LogSystem.reset();
+
+    // Run
+    server = new Wicked(['--silent', '--no-exit']);
+    await Tools.delay(100);
+
+    // Check
+    expect(server).not.toBeNull();
+    expect(LogSystem.output.length).toBeGreaterThan(6);
+    expect(LogSystem.hasCriticalError).toBe(false);
+    expect(LogSystem.hasError).toBe(false);
+    expect(server.isRunning).toBe(true);
+    expect(server.hasRun).toBe(false);
+
+    let result;
+
+    result = await Tools.get('http://localhost:3000/script_error.node.js');
+    expect(result.ok).toBe(false);
+
+    // Clean
+    Tools.fileDelete('./log/access.log');
+    Tools.fileDelete('./log/error.log');
+    process.chdir(originalDir);
+  });
+
   // Long script
 
   // multiple long script
 });
-
-// TODO Add
