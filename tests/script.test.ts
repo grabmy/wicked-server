@@ -9,30 +9,32 @@ let server: Wicked | null;
 
 describe('Run node script', () => {
   beforeEach(async () => {
-    LogSystem.reset();
     if (server?.isRunning) {
-      server.stop();
+      await server.stop();
     }
+    LogSystem.reset();
     process.chdir(originalDir);
     await Tools.waitForPort(3000);
   });
 
   afterEach(async () => {
-    LogSystem.reset();
+    console.log('afterEach: server?.isRunning = ' + server?.isRunning);
     if (server?.isRunning) {
-      server.stop();
+      await server.stop();
     }
+    LogSystem.reset();
     process.chdir(originalDir);
     await Tools.waitForPort(3000);
   });
 
+  /*
   test('Request node script', async () => {
     const portAvailable = await Tools.waitForPort(3000);
     expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/script/');
+    process.chdir('./tests/script_request/');
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
     LogSystem.reset();
@@ -45,6 +47,9 @@ describe('Run node script', () => {
     expect(server).not.toBeNull();
     expect(LogSystem.output.length).toBeGreaterThan(6);
 
+    if (LogSystem.hasCriticalError) {
+      console.log(LogSystem.output);
+    }
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
     expect(server.isRunning).toBe(true);
@@ -58,6 +63,7 @@ describe('Run node script', () => {
     expect(result.data).toContain('script.ok');
 
     // Clean
+    await server.stop();
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
     process.chdir(originalDir);
@@ -69,7 +75,7 @@ describe('Run node script', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/script/');
+    process.chdir('./tests/script_request/');
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
     LogSystem.reset();
@@ -81,6 +87,9 @@ describe('Run node script', () => {
     // Check
     expect(server).not.toBeNull();
     expect(LogSystem.output.length).toBeGreaterThan(6);
+    if (LogSystem.hasCriticalError) {
+      console.log(LogSystem.output);
+    }
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
     expect(server.isRunning).toBe(true);
@@ -131,6 +140,7 @@ describe('Run node script', () => {
     expect(result.data).toContain('<title>Error</title>');
 
     // Clean
+    await server.stop();
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
     process.chdir(originalDir);
@@ -144,7 +154,7 @@ describe('Run node script', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/script/');
+    process.chdir('./tests/script_request/');
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
     LogSystem.reset();
@@ -156,6 +166,9 @@ describe('Run node script', () => {
     // Check
     expect(server).not.toBeNull();
     expect(LogSystem.output.length).toBeGreaterThan(6);
+    if (LogSystem.hasCriticalError) {
+      console.log(LogSystem.output);
+    }
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
     expect(server.isRunning).toBe(true);
@@ -165,14 +178,62 @@ describe('Run node script', () => {
 
     result = await Tools.get('http://localhost:3000/script_error.node.js');
     expect(result.ok).toBe(false);
+    expect(Tools.fileExists('./log/error.log')).toBe(true);
+    expect(Tools.fileRead('./log/error.log')).toContain("Error: Cannot find module 'unknown'");
 
     // Clean
+    await server.stop();
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
     process.chdir(originalDir);
+  });*/
+
+  test('Slow script', async () => {
+    const portAvailable = await Tools.waitForPort(3000);
+    expect(portAvailable).toBe(true);
+
+    // Prepare
+    process.chdir(originalDir);
+    process.chdir('./tests/script_request/');
+    Tools.fileDelete('./log/access.log');
+    Tools.fileDelete('./log/error.log');
+    LogSystem.reset();
+
+    // Run
+    server = new Wicked(['--silent', '--no-exit']);
+    await Tools.delay(100);
+
+    // Check
+    expect(server).not.toBeNull();
+    expect(LogSystem.output.length).toBeGreaterThan(6);
+    if (LogSystem.hasCriticalError) {
+      console.log(LogSystem.output);
+    }
+    expect(LogSystem.hasCriticalError).toBe(false);
+    expect(LogSystem.hasError).toBe(false);
+    expect(server.isRunning).toBe(true);
+    expect(server.hasRun).toBe(false);
+
+    let result;
+
+    const startDateTime = new Date().getTime();
+    result = await Tools.get('http://localhost:3000/slow.node.js');
+    console.log('result.code = ' + result.code);
+    const endDateTime = new Date().getTime();
+    expect(result.ok).toBe(true);
+    expect(startDateTime).toBeLessThan(endDateTime);
+    // expect(endDateTime / 1000).toBeCloseTo(startDateTime / 1000 + 2, 0);
+
+    expect(Tools.fileExists('./log/error.log')).toBe(false);
+    expect(Tools.fileExists('./log/access.log')).toBe(true);
+
+    // Clean
+    console.log('execute server.stop');
+    await server.stop();
+    console.log('server.stop after');
+    Tools.fileDelete('./log/access.log');
+    Tools.fileDelete('./log/error.log');
+    process.chdir(originalDir);
+    console.log('test has ended');
   });
-
-  // Long script
-
-  // multiple long script
 });

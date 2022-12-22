@@ -185,8 +185,11 @@ var Log = /** @class */ (function () {
         if (!this._enabled) {
             return;
         }
-        var lines = message.split('\n');
+        var lines = message.trim().split('\n');
         lines.forEach(function (line) {
+            if (line.trim() == '') {
+                return;
+            }
             var finalMessage = (_this.getDateTime() != '' ? _this.getDateTime() + '\t' : '') + line;
             if (!_this.isSilent) {
                 _this.send(_this.getColor(type), finalMessage);
@@ -217,3 +220,4 @@ var Log = /** @class */ (function () {
     return Log;
 }());
 exports.default = Log;
+//# sourceMappingURL=Log.js.map

@@ -13,22 +13,26 @@ describe('Simple commands', () => {
   });
 
   afterEach(async () => {
-    process.chdir(originalDir);
     Tools.dirDelete('./public/www/');
     Tools.dirDelete('./public');
     Tools.dirDelete('./log/access/');
     Tools.dirDelete('./log/error/');
     Tools.dirDelete('./log');
-    Tools.fileDelete('./config/simple/test.json');
-    Tools.dirDelete('./config/simple/');
+    Tools.fileDelete('./config/complicated/test.json');
+    Tools.dirDelete('./config/complicated/');
     Tools.dirDelete('./config/');
 
+    process.chdir(originalDir);
     LogSystem.reset();
     await Tools.waitForPort(3000);
   });
 
   test('Console help', async () => {
     await Tools.delay(200);
+
+    // Prepare
+    process.chdir(originalDir);
+    process.chdir('./tests/commands_empty/');
 
     // Run
     const server = new Wicked(['--silent', '--no-exit', '--help']);
@@ -48,7 +52,7 @@ describe('Simple commands', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/empty/');
+    process.chdir('./tests/commands_empty/');
     Tools.fileDelete('./wicked.config.json');
     Tools.dirDelete('./public');
     Tools.dirDelete('./log');
@@ -81,7 +85,7 @@ describe('Simple commands', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/simple/');
+    process.chdir('./tests/commands_config/');
     Tools.dirDelete('./public/www/');
     Tools.dirDelete('./public/');
     Tools.dirDelete('./log/access/');
@@ -98,10 +102,10 @@ describe('Simple commands', () => {
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(server.isRunning).toBe(false);
     expect(server.hasRun).toBe(false);
-    expect(Tools.fileExists('./simple.config.json')).toBe(true);
+    expect(Tools.fileExists('./wicked.config.json')).toBe(true);
 
-    const newConfiguration: Configuration = Tools.fileReadJson('./simple.config.json');
-    expect(newConfiguration.name).toBe('simple');
+    const newConfiguration: Configuration = Tools.fileReadJson('./wicked.config.json');
+    expect(newConfiguration.name).toBe('config');
 
     expect(Tools.dirExists('./public/www/')).toBe(true);
     expect(Tools.dirExists('./log/error/')).toBe(true);
@@ -120,15 +124,15 @@ describe('Simple commands', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/empty/');
-    Tools.fileDelete('./config/simple/test.json');
-    Tools.dirDelete('./config/simple/');
+    process.chdir('./tests/commands_empty/');
+    Tools.fileDelete('./config/complicated/test.json');
+    Tools.dirDelete('./config/complicated/');
     Tools.dirDelete('./config/');
     Tools.dirDelete('./public/');
     Tools.dirDelete('./log/');
 
     // Run
-    const server = new Wicked(['--silent', '--no-exit', '--create', '-config', 'config/simple/test.json']);
+    const server = new Wicked(['--silent', '--no-exit', '--create', '-config', 'config/complicated/test.json']);
     await Tools.delay(200);
 
     // Check
@@ -137,17 +141,17 @@ describe('Simple commands', () => {
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(server.isRunning).toBe(false);
     expect(server.hasRun).toBe(false);
-    expect(Tools.fileExists('./config/simple/test.json')).toBe(true);
+    expect(Tools.fileExists('./config/complicated/test.json')).toBe(true);
 
-    const newConfiguration: Configuration = Tools.fileReadJson('./config/simple/test.json');
+    const newConfiguration: Configuration = Tools.fileReadJson('./config/complicated/test.json');
     expect(newConfiguration.name).toBe('default');
 
     expect(Tools.dirExists('./public/')).toBe(true);
     expect(Tools.dirExists('./log/')).toBe(true);
 
     // Clean
-    Tools.fileDelete('./config/simple/test.json');
-    Tools.dirDelete('./config/simple/');
+    Tools.fileDelete('./config/complicated/test.json');
+    Tools.dirDelete('./config/complicated/');
     Tools.dirDelete('./config/');
     Tools.dirDelete('./public/');
     Tools.dirDelete('./log/');

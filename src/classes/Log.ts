@@ -177,8 +177,11 @@ export default class Log {
     if (!this._enabled) {
       return;
     }
-    const lines = message.split('\n');
+    const lines = message.trim().split('\n');
     lines.forEach((line) => {
+      if (line.trim() == '') {
+        return;
+      }
       const finalMessage = (this.getDateTime() != '' ? this.getDateTime() + '\t' : '') + line;
       if (!this.isSilent) {
         this.send(this.getColor(type), finalMessage);

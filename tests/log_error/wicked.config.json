@@ -1,0 +1,17 @@
+{
+    "name": "log",
+    "port": 3000,
+    "public": "public/",
+    "log": {
+        "error": {
+            "enabled": true,
+            "target": "file",
+            "path": "log/error.log"
+        },
+        "access": {
+            "enabled": true,
+            "target": "file",
+            "path": "log/access.log"
+        }
+    }
+}

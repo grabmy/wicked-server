@@ -62,3 +62,4 @@ function initLog(options) {
     };
     return __assign(__assign({}, defaults), options);
 }
+//# sourceMappingURL=Configuration.js.map

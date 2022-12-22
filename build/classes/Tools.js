@@ -123,29 +123,19 @@ var Tools = /** @class */ (function () {
     Tools.waitForPort = function (port, timeout) {
         if (timeout === void 0) { timeout = 10000; }
         return __awaiter(this, void 0, void 0, function () {
-            var remaining, result, available;
+            var result, tcpPortUsed;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        remaining = timeout;
                         result = false;
-                        _a.label = 1;
+                        tcpPortUsed = require('tcp-port-used');
+                        return [4 /*yield*/, tcpPortUsed.waitUntilFree(port, 500, 4000).then(function () {
+                                result = true;
+                            }, function (err) {
+                                result = false;
+                            })];
                     case 1:
-                        if (!(remaining > 0)) return [3 /*break*/, 4];
-                        remaining -= 100;
-                        return [4 /*yield*/, Tools.delay(100)];
-                    case 2:
                         _a.sent();
-                        return [4 /*yield*/, Tools.checkPort(port)];
-                    case 3:
-                        available = _a.sent();
-                        if (available) {
-                            result = true;
-                            return [3 /*break*/, 4];
-                        }
-                        return [3 /*break*/, 1];
-                    case 4:
-                        console.log('waitForPort: result = ' + result);
                         return [2 /*return*/, result];
                 }
             });
@@ -164,12 +154,12 @@ var Tools = /** @class */ (function () {
             }
             return require('fs').existsSync(path);
         }
-        catch (err) {
-            if (err.code === 'ENOENT') {
+        catch (error) {
+            if (error.code === 'ENOENT') {
                 return false;
             }
             else {
-                console.log('fileExists: ' + err);
+                LogSystem_1.default.log('File exists: ' + error, 'error');
             }
             return false;
         }
@@ -183,8 +173,8 @@ var Tools = /** @class */ (function () {
             fs.copyFileSync(source, destination);
             return Tools.fileExists(destination);
         }
-        catch (err) {
-            LogSystem_1.default.log('' + err, 'error');
+        catch (error) {
+            LogSystem_1.default.log('File copy: ' + error, 'error');
             return false;
         }
     };
@@ -199,15 +189,11 @@ var Tools = /** @class */ (function () {
             fs.unlinkSync(path);
             return true;
         }
-        catch (err) {
-            if (err.code === 'ENOENT') {
+        catch (error) {
+            if (error.code === 'ENOENT') {
                 return false;
             }
-            else {
-                console.log('fileDelete: code = ' + err.code);
-                console.log('fileDelete: ' + err);
-            }
-            LogSystem_1.default.log('' + err, 'error');
+            LogSystem_1.default.log('File delete: ' + error, 'error');
             return false;
         }
     };
@@ -222,9 +208,8 @@ var Tools = /** @class */ (function () {
         try {
             return fs.readFileSync(path).toString();
         }
-        catch (err) {
-            console.log('fileRead: Error: ' + err);
-            LogSystem_1.default.log('' + err, 'error');
+        catch (error) {
+            LogSystem_1.default.log('File delete: ' + error, 'error');
             return false;
         }
     };
@@ -235,8 +220,8 @@ var Tools = /** @class */ (function () {
         try {
             return JSON.parse(fs.readFileSync(path));
         }
-        catch (err) {
-            LogSystem_1.default.log('' + err, 'error');
+        catch (error) {
+            LogSystem_1.default.log('File read JSON: ' + error, 'error');
             return false;
         }
     };
@@ -248,8 +233,8 @@ var Tools = /** @class */ (function () {
             require('fs').writeFileSync(path, content);
             return true;
         }
-        catch (err) {
-            LogSystem_1.default.log('' + err, 'error');
+        catch (error) {
+            LogSystem_1.default.log('File write: ' + error, 'error');
             return false;
         }
     };
@@ -293,8 +278,8 @@ var Tools = /** @class */ (function () {
                 fs.mkdirSync(dir);
             }
         }
-        catch (err) {
-            console.log('dirCreate: Error: ' + err);
+        catch (error) {
+            LogSystem_1.default.log('Dir create: ' + error, 'error');
         }
         return fs.existsSync(dir);
     };
@@ -336,14 +321,11 @@ var Tools = /** @class */ (function () {
             fs.rmdirSync(path, { recursive: recursive });
             return true;
         }
-        catch (err) {
-            if (err.code === 'ENOENT') {
+        catch (error) {
+            if (error.code === 'ENOENT') {
                 return false;
             }
-            else {
-                console.log('dirDelete: ' + err);
-            }
-            LogSystem_1.default.log('' + err, 'error');
+            LogSystem_1.default.log('Dir create: ' + error, 'error');
             return false;
         }
     };
@@ -464,6 +446,40 @@ var Tools = /** @class */ (function () {
         parts.shift();
         return parts.join('.');
     };
+    Tools.execute = function (command) {
+        return __awaiter(this, void 0, void 0, function () {
+            var exec;
+            return __generator(this, function (_a) {
+                exec = require('child_process').exec;
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        exec(command, function (error, stdout, stderr) {
+                            var response = { error: error, stdout: stdout, stderr: stderr };
+                            resolve(response);
+                        });
+                    })];
+            });
+        });
+    };
+    /*************************************************************
+     * Execution
+     ************************************************************/
+    Tools.isPromise = function (fct) {
+        if (typeof fct === 'object' && typeof fct.then === 'function') {
+            return true;
+        }
+        return false;
+    };
+    Tools.isAsync = function (fct, fctResult) {
+        if (fctResult === void 0) { fctResult = null; }
+        if (fct.constructor.name === 'AsyncFunction' ||
+            (typeof fct === 'function' && fctResult != null && Tools.isPromise(fctResult))) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    };
     return Tools;
 }());
 exports.default = Tools;
+//# sourceMappingURL=Tools.js.map

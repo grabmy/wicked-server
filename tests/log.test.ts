@@ -9,7 +9,7 @@ describe('Writing log', () => {
   beforeEach(async () => {
     LogSystem.reset();
     if (server?.isRunning) {
-      server.stop();
+      await server.stop();
     }
     process.chdir(originalDir);
     await Tools.waitForPort(3000);
@@ -18,7 +18,7 @@ describe('Writing log', () => {
   afterEach(async () => {
     LogSystem.reset();
     if (server?.isRunning) {
-      server.stop();
+      await server.stop();
     }
     process.chdir(originalDir);
     await Tools.waitForPort(3000);
@@ -30,7 +30,7 @@ describe('Writing log', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/log/');
+    process.chdir('./tests/log_access/');
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
     LogSystem.reset();
@@ -42,6 +42,7 @@ describe('Writing log', () => {
     // Check
     expect(server).not.toBeNull();
     expect(LogSystem.output.length).toBeGreaterThan(6);
+    // console.log(LogSystem.output);
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
     expect(server.core.configuration?.name).toBe('log');
@@ -64,7 +65,7 @@ describe('Writing log', () => {
     expect(Tools.fileRead('log/access.log')).toContain('GET 404 /error/404.xxx');
 
     // Stop
-    server.stop();
+    await server.stop();
     await Tools.delay(200);
 
     expect(LogSystem.hasCriticalError).toBe(false);
@@ -81,7 +82,7 @@ describe('Writing log', () => {
   test('Error log', async () => {
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/log/');
+    process.chdir('./tests/log_error/');
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
 
@@ -95,7 +96,6 @@ describe('Writing log', () => {
     // Check
     expect(server).not.toBeNull();
     expect(LogSystem.output.length).toBeGreaterThan(6);
-    console.log('log.test.ts:100', LogSystem.output);
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
     expect(server.core.configuration?.name).toBe('log');
@@ -111,7 +111,7 @@ describe('Writing log', () => {
     expect(Tools.fileRead('log/error.log')).toContain("Cannot find module 'nothing'");
 
     // Stop
-    server.stop();
+    await server.stop();
     await Tools.delay(200);
 
     expect(LogSystem.hasCriticalError).toBe(false);

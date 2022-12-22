@@ -83,45 +83,88 @@ var Server = /** @class */ (function () {
         }
     };
     Server.prototype.beforeRequest = function (request, response, next) {
-        var _this = this;
         var _a;
-        var isNodeScript = false;
-        if (Tools_1.default.getUrlExtension(request.url) == 'node.js') {
-            isNodeScript = true;
-        }
-        response.on('finish', function () {
-            _this.afterRequest(request, response, next);
+        return __awaiter(this, void 0, void 0, function () {
+            var isNodeScript, stop, nodeScriptFile, error_1;
+            var _this = this;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        isNodeScript = false;
+                        if (Tools_1.default.getUrlExtension(request.url) == 'node.js') {
+                            console.log('beforeRequest: isNodeScript');
+                            isNodeScript = true;
+                        }
+                        response.on('finish', function () {
+                            _this.afterRequest(request, response, next);
+                        });
+                        if (!isNodeScript) return [3 /*break*/, 5];
+                        stop = false;
+                        _b.label = 1;
+                    case 1:
+                        _b.trys.push([1, 3, , 4]);
+                        nodeScriptFile = this.configuration.public + request.url;
+                        console.log('beforeRequest: execute script ' + request.url);
+                        return [4 /*yield*/, this.execute(nodeScriptFile, request, response)];
+                    case 2:
+                        stop = _b.sent();
+                        console.log('beforeRequest: executed ' + request.url + ', stop = ' + stop);
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_1 = _b.sent();
+                        console.log(error_1 + '');
+                        (_a = this.core.logError) === null || _a === void 0 ? void 0 : _a.log(error_1 + '', 'error');
+                        response.statusCode = 500;
+                        try {
+                            response.send('');
+                        }
+                        catch (err) { }
+                        stop = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        if (!stop) {
+                            next();
+                        }
+                        return [3 /*break*/, 6];
+                    case 5:
+                        next();
+                        _b.label = 6;
+                    case 6: return [2 /*return*/];
+                }
+            });
         });
-        if (isNodeScript) {
-            var stop = false;
-            try {
-                var nodeScriptFile = this.configuration.public + request.url;
-                stop = this.execute(nodeScriptFile, request, response);
-            }
-            catch (error) {
-                (_a = this.core.logError) === null || _a === void 0 ? void 0 : _a.log(error + '', 'error');
-                response.statusCode = 500;
-                response.send('');
-                stop = true;
-            }
-            if (!stop) {
-                next();
-            }
-        }
-        else {
-            next();
-        }
     };
     Server.prototype.execute = function (nodeScriptFile, request, response) {
-        if (Tools_1.default.fileExists(nodeScriptFile)) {
-            var pathAbsolute = require('path').resolve(nodeScriptFile);
-            var scriptFct = require(pathAbsolute);
-            var scriptInstance = new Script_1.default(this, request, response);
-            var result = scriptFct(scriptInstance);
-            response.send(scriptInstance.body);
-            return true;
-        }
-        return false;
+        return __awaiter(this, void 0, void 0, function () {
+            var pathAbsolute, scriptFct, scriptInstance, result, promise;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!Tools_1.default.fileExists(nodeScriptFile)) return [3 /*break*/, 3];
+                        pathAbsolute = require('path').resolve(nodeScriptFile);
+                        scriptFct = require(pathAbsolute);
+                        scriptInstance = new Script_1.default(this, request, response);
+                        return [4 /*yield*/, scriptFct(scriptInstance)];
+                    case 1:
+                        result = _a.sent();
+                        if (!scriptInstance.isFinished) {
+                            console.log('execute: isFinished = false');
+                            console.log('execute: resolveAndSend');
+                            scriptInstance.resolveAndSend();
+                        }
+                        else {
+                            console.log('execute: isFinished = true');
+                        }
+                        return [4 /*yield*/, scriptInstance.promise()];
+                    case 2:
+                        promise = _a.sent();
+                        console.log('execute: promise complete');
+                        console.log(promise);
+                        return [2 /*return*/, promise];
+                    case 3: return [2 /*return*/, false];
+                }
+            });
+        });
     };
     Server.prototype.handleRequest = function (request, response, next) {
         next();
@@ -154,3 +197,4 @@ var Server = /** @class */ (function () {
     return Server;
 }());
 exports.default = Server;
+//# sourceMappingURL=Server.js.map

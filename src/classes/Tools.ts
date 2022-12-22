@@ -66,19 +66,17 @@ export default class Tools {
   }
 
   static async waitForPort(port: number, timeout: number = 10000): Promise<boolean> {
-    let remaining = timeout;
     let result = false;
+    const tcpPortUsed = require('tcp-port-used');
 
-    while (remaining > 0) {
-      remaining -= 100;
-      await Tools.delay(100);
-      const available = await Tools.checkPort(port);
-      if (available) {
+    await tcpPortUsed.waitUntilFree(port, 500, 4000).then(
+      function () {
         result = true;
-        break;
-      }
-    }
-    console.log('waitForPort: result = ' + result);
+      },
+      function (err: any) {
+        result = false;
+      },
+    );
     return result;
   }
 
@@ -95,11 +93,11 @@ export default class Tools {
         return false;
       }
       return require('fs').existsSync(path);
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
         return false;
       } else {
-        console.log('fileExists: ' + err);
+        LogSystem.log('File exists: ' + error, 'error');
       }
       return false;
     }
@@ -113,8 +111,8 @@ export default class Tools {
     try {
       fs.copyFileSync(source, destination);
       return Tools.fileExists(destination);
-    } catch (err) {
-      LogSystem.log('' + err, 'error');
+    } catch (error) {
+      LogSystem.log('File copy: ' + error, 'error');
       return false;
     }
   }
@@ -129,14 +127,11 @@ export default class Tools {
     try {
       fs.unlinkSync(path);
       return true;
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
         return false;
-      } else {
-        console.log('fileDelete: code = ' + err.code);
-        console.log('fileDelete: ' + err);
       }
-      LogSystem.log('' + err, 'error');
+      LogSystem.log('File delete: ' + error, 'error');
       return false;
     }
   }
@@ -151,9 +146,8 @@ export default class Tools {
     }
     try {
       return fs.readFileSync(path).toString();
-    } catch (err) {
-      console.log('fileRead: Error: ' + err);
-      LogSystem.log('' + err, 'error');
+    } catch (error) {
+      LogSystem.log('File delete: ' + error, 'error');
       return false;
     }
   }
@@ -164,8 +158,8 @@ export default class Tools {
     }
     try {
       return JSON.parse(fs.readFileSync(path));
-    } catch (err) {
-      LogSystem.log('' + err, 'error');
+    } catch (error) {
+      LogSystem.log('File read JSON: ' + error, 'error');
       return false;
     }
   }
@@ -177,8 +171,8 @@ export default class Tools {
     try {
       require('fs').writeFileSync(path, content);
       return true;
-    } catch (err) {
-      LogSystem.log('' + err, 'error');
+    } catch (error) {
+      LogSystem.log('File write: ' + error, 'error');
       return false;
     }
   }
@@ -226,8 +220,8 @@ export default class Tools {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
       }
-    } catch (err) {
-      console.log('dirCreate: Error: ' + err);
+    } catch (error) {
+      LogSystem.log('Dir create: ' + error, 'error');
     }
     return fs.existsSync(dir);
   }
@@ -269,13 +263,11 @@ export default class Tools {
       */
       fs.rmdirSync(path, { recursive });
       return true;
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
         return false;
-      } else {
-        console.log('dirDelete: ' + err);
       }
-      LogSystem.log('' + err, 'error');
+      LogSystem.log('Dir create: ' + error, 'error');
       return false;
     }
   }
@@ -398,6 +390,44 @@ export default class Tools {
     parts.shift();
     return parts.join('.');
   }
+
+  static async execute(command: string): Promise<CommandResponse> {
+    const { exec } = require('child_process');
+    return new Promise((resolve, reject) => {
+      exec(command, (error: any | null, stdout: string, stderr: string) => {
+        const response: CommandResponse = { error, stdout, stderr };
+        resolve(response);
+      });
+    });
+  }
+
+  /*************************************************************
+   * Execution
+   ************************************************************/
+
+  static isPromise(fct: any): boolean {
+    if (typeof fct === 'object' && typeof fct.then === 'function') {
+      return true;
+    }
+    return false;
+  }
+
+  static isAsync(fct: any, fctResult: any | null = null) {
+    if (
+      fct.constructor.name === 'AsyncFunction' ||
+      (typeof fct === 'function' && fctResult != null && Tools.isPromise(fctResult))
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+interface CommandResponse {
+  error: any | null;
+  stderr: string;
+  stdout: string;
 }
 
 interface RequestResponse {

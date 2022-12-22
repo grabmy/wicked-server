@@ -5,6 +5,11 @@ export default class Script {
   private _body: string = '';
   private _charset = '';
   private _contentType = '';
+  private _isAsync = false;
+  private _isFinished = false;
+  private _resolve = (value: boolean): void => {
+    return;
+  };
 
   constructor(core: any, request: any, response: any) {
     this._core = core;
@@ -29,7 +34,38 @@ export default class Script {
     return this._body;
   }
 
-  run(): void {}
+  get isAsync(): boolean {
+    return this._isAsync;
+  }
+
+  get isFinished(): boolean {
+    return this._isFinished;
+  }
+
+  async(): void {
+    this._isAsync = true;
+  }
+
+  resolve(): void {
+    if (this._isFinished == true) {
+      return;
+    }
+    this._isFinished = true;
+    if (this.isAsync) {
+      this._response.send(this._body);
+    }
+    this._resolve(true);
+  }
+
+  resolveAndSend(): void {
+    if (this._isFinished == true) {
+      console.log('script.resolveAndSend: isFinished');
+      return;
+    }
+    this._isFinished = true;
+    this._response.send(this._body);
+    this._resolve(true);
+  }
 
   setBody(body: string): Script {
     this._body = body;
@@ -65,5 +101,22 @@ export default class Script {
   setStatusCode(code: number): Script {
     this._response.statusCode = code;
     return this;
+  }
+
+  promise(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (this.isAsync) {
+        console.log('promise: isAsync = true');
+        this._resolve = resolve;
+        if (this._isFinished) {
+          console.log('promise: resolve now');
+          resolve(true);
+        }
+      } else {
+        console.log('promise: isAsync = false');
+        this.resolve();
+        resolve(true);
+      }
+    });
   }
 }

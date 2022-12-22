@@ -1,0 +1,20 @@
+{
+    "name": "script",
+    "port": 3000,
+    "public": "public/",
+    "script": {
+        "extension": "node.js"
+    },
+    "log": {
+        "error": {
+            "enabled": true,
+            "target": "file",
+            "path": "log/error.log"
+        },
+        "access": {
+            "enabled": true,
+            "target": "file",
+            "path": "log/access.log"
+        }
+    }
+}

@@ -5,6 +5,11 @@ var Script = /** @class */ (function () {
         this._body = '';
         this._charset = '';
         this._contentType = '';
+        this._isAsync = false;
+        this._isFinished = false;
+        this._resolve = function (value) {
+            return;
+        };
         this._core = core;
         this._request = request;
         this._response = response;
@@ -38,7 +43,42 @@ var Script = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
-    Script.prototype.run = function () { };
+    Object.defineProperty(Script.prototype, "isAsync", {
+        get: function () {
+            return this._isAsync;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Script.prototype, "isFinished", {
+        get: function () {
+            return this._isFinished;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Script.prototype.async = function () {
+        this._isAsync = true;
+    };
+    Script.prototype.resolve = function () {
+        if (this._isFinished == true) {
+            return;
+        }
+        this._isFinished = true;
+        if (this.isAsync) {
+            this._response.send(this._body);
+        }
+        this._resolve(true);
+    };
+    Script.prototype.resolveAndSend = function () {
+        if (this._isFinished == true) {
+            console.log('script.resolveAndSend: isFinished');
+            return;
+        }
+        this._isFinished = true;
+        this._response.send(this._body);
+        this._resolve(true);
+    };
     Script.prototype.setBody = function (body) {
         this._body = body;
         return this;
@@ -70,6 +110,25 @@ var Script = /** @class */ (function () {
         this._response.statusCode = code;
         return this;
     };
+    Script.prototype.promise = function () {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            if (_this.isAsync) {
+                console.log('promise: isAsync = true');
+                _this._resolve = resolve;
+                if (_this._isFinished) {
+                    console.log('promise: resolve now');
+                    resolve(true);
+                }
+            }
+            else {
+                console.log('promise: isAsync = false');
+                _this.resolve();
+                resolve(true);
+            }
+        });
+    };
     return Script;
 }());
 exports.default = Script;
+//# sourceMappingURL=Script.js.map

@@ -69,3 +69,4 @@ var LogSystem = /** @class */ (function () {
     return LogSystem;
 }());
 exports.default = LogSystem;
+//# sourceMappingURL=LogSystem.js.map

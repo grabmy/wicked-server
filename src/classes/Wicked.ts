@@ -309,7 +309,7 @@ export default class Wicked {
     return this;
   }
 
-  stop(): void {
-    this.core.stop();
+  async stop(): Promise<void> {
+    return await this.core.stop();
   }
 }

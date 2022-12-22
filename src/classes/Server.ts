@@ -47,9 +47,10 @@ export default class Server {
     }
   }
 
-  beforeRequest(request: any, response: any, next: any): void {
+  async beforeRequest(request: any, response: any, next: any): Promise<void> {
     let isNodeScript = false;
     if (Tools.getUrlExtension(request.url) == 'node.js') {
+      console.log('beforeRequest: isNodeScript');
       isNodeScript = true;
     }
 
@@ -61,11 +62,16 @@ export default class Server {
       let stop = false;
       try {
         const nodeScriptFile = this.configuration.public + request.url;
-        stop = this.execute(nodeScriptFile, request, response);
+        console.log('beforeRequest: execute script ' + request.url);
+        stop = await this.execute(nodeScriptFile, request, response);
+        console.log('beforeRequest: executed ' + request.url + ', stop = ' + stop);
       } catch (error) {
+        console.log(error + '');
         this.core.logError?.log(error + '', 'error');
         response.statusCode = 500;
-        response.send('');
+        try {
+          response.send('');
+        } catch (err) {}
         stop = true;
       }
       if (!stop) {
@@ -76,14 +82,24 @@ export default class Server {
     }
   }
 
-  execute(nodeScriptFile: string, request: any, response: any): boolean {
+  async execute(nodeScriptFile: string, request: any, response: any): Promise<boolean> {
     if (Tools.fileExists(nodeScriptFile)) {
       const pathAbsolute = require('path').resolve(nodeScriptFile);
       const scriptFct = require(pathAbsolute);
       const scriptInstance = new Script(this, request, response);
-      const result = scriptFct(scriptInstance);
-      response.send(scriptInstance.body);
-      return true;
+      const result = await scriptFct(scriptInstance);
+
+      if (!scriptInstance.isFinished) {
+        console.log('execute: isFinished = false');
+        console.log('execute: resolveAndSend');
+        scriptInstance.resolveAndSend();
+      } else {
+        console.log('execute: isFinished = true');
+      }
+      const promise = await scriptInstance.promise();
+      console.log('execute: promise complete');
+      console.log(promise);
+      return promise;
     }
     return false;
   }

@@ -11,7 +11,7 @@ let serverError: Wicked | null;
 describe('Run server', () => {
   beforeEach(async () => {
     if (server?.isRunning) {
-      server.stop();
+      await server.stop();
     }
     if (serverError?.isRunning) {
       serverError.stop();
@@ -23,7 +23,7 @@ describe('Run server', () => {
 
   afterEach(async () => {
     if (server?.isRunning) {
-      server.stop();
+      await server.stop();
     }
     if (serverError?.isRunning) {
       serverError.stop();
@@ -33,13 +33,13 @@ describe('Run server', () => {
     await Tools.waitForPort(3000);
   });
 
-  test('Server in an empty directory', async () => {
+  test('Server run in an empty directory', async () => {
     const portAvailable = await Tools.waitForPort(3000);
     expect(portAvailable).toBe(true);
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/empty/');
+    process.chdir('./tests/server_empty/');
     Tools.fileDelete('./wicked.config.json');
     Tools.dirDelete('./public');
 
@@ -55,7 +55,6 @@ describe('Run server', () => {
     expect(server.isRunning).toBe(false);
     expect(server.hasRun).toBe(false);
     expect(LogSystem.output.join(' ')).toContain('Cannot start server with no configuration loaded');
-    console.log('server.test.ts:55 fileExists ' + Tools.fileExists('./wicked.config.json'));
     expect(Tools.fileExists('./wicked.config.json')).toBe(false);
 
     // Clean
@@ -70,7 +69,8 @@ describe('Run server', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/simple/');
+    process.chdir('./tests/server_nopublic/');
+    Tools.dirDelete('./public/www');
     Tools.dirDelete('./public');
 
     // Run
@@ -80,6 +80,7 @@ describe('Run server', () => {
     // Check
     expect(server).not.toBeNull();
     expect(LogSystem.output.length).toBeGreaterThan(6);
+    // console.log(LogSystem.output);
     expect(LogSystem.hasCriticalError).toBe(true);
     expect(server.isRunning).toBe(false);
     expect(server.hasRun).toBe(false);
@@ -87,6 +88,7 @@ describe('Run server', () => {
     expect(Tools.fileExists('./wicked.config.json')).toBe(true);
 
     // Clean
+    Tools.dirDelete('./public/www');
     Tools.dirDelete('./public');
     process.chdir(originalDir);
   });
@@ -97,8 +99,9 @@ describe('Run server', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/normal/');
+    process.chdir('./tests/server_normal/');
     Tools.fileDelete('log/access.log');
+    Tools.fileDelete('log/error.log');
     Tools.fileDelete('log/error.log');
 
     // Run
@@ -117,8 +120,8 @@ describe('Run server', () => {
     expect(Tools.dirExists('./public/')).toBe(true);
 
     // Stop
-    server.stop();
-    await Tools.delay(200);
+    await server.stop();
+    await Tools.delay(1000);
 
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
@@ -137,7 +140,7 @@ describe('Run server', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/mime/');
+    process.chdir('./tests/server_mime/');
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
@@ -201,7 +204,7 @@ describe('Run server', () => {
     expect(result.data).not.toBe('');
 
     // Stop
-    server.stop();
+    await server.stop();
     await Tools.delay(200);
 
     expect(LogSystem.hasCriticalError).toBe(false);
@@ -219,7 +222,7 @@ describe('Run server', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/mime/');
+    process.chdir('./tests/server_mime/');
 
     // Run
     server = new Wicked(['--silent', '--no-exit']);
@@ -255,7 +258,7 @@ describe('Run server', () => {
     expect(result.data).toContain('Error');
 
     // Stop
-    server.stop();
+    await server.stop();
     await Tools.delay(200);
 
     expect(LogSystem.hasCriticalError).toBe(false);
@@ -273,7 +276,7 @@ describe('Run server', () => {
 
     // Prepare
     process.chdir(originalDir);
-    process.chdir('./tests/log/');
+    process.chdir('./tests/server_normal/');
     Tools.fileDelete('./log/access.log');
     Tools.fileDelete('./log/error.log');
 
@@ -286,7 +289,7 @@ describe('Run server', () => {
     expect(LogSystem.output.length).toBeGreaterThan(6);
     expect(LogSystem.hasCriticalError).toBe(false);
     expect(LogSystem.hasError).toBe(false);
-    expect(server.core.configuration?.name).toBe('log');
+    expect(server.core.configuration?.name).toBe('normal');
     expect(server.isRunning).toBe(true);
 
     // server error
@@ -299,7 +302,7 @@ describe('Run server', () => {
     expect(serverError.isRunning).toBe(false);
 
     // Stop
-    server.stop();
+    await server.stop();
     await Tools.delay(200);
 
     // Clean
