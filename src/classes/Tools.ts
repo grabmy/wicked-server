@@ -251,16 +251,6 @@ export default class Tools {
       return true;
     }
     try {
-      /*
-      fs.readdir(path, (err: any, files: any) => {
-        if (err) throw err;
-        for (const file of files) {
-          require('fs').unlink(require('path').join(path, file), (err: any) => {
-            console.log('dirDelete: delete file: ' + err);
-          });
-        }
-      });
-      */
       fs.rmdirSync(path, { recursive });
       return true;
     } catch (error: any) {

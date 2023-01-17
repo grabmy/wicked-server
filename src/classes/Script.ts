@@ -1,3 +1,5 @@
+import Tools from './Tools';
+
 export default class Script {
   private _core: any;
   private _request: any;
@@ -11,11 +13,12 @@ export default class Script {
     return;
   };
 
-  constructor(core: any, request: any, response: any) {
+  constructor(core: any, request: any, response: any, scriptFct: any) {
     this._core = core;
     this._request = request;
     this._response = response;
     this._body = '';
+    this._isAsync = Tools.isAsync(scriptFct);
   }
 
   get request(): any {
@@ -42,11 +45,12 @@ export default class Script {
     return this._isFinished;
   }
 
-  async(): void {
-    this._isAsync = true;
+  async(async: boolean): void {
+    this._isAsync = async;
   }
 
   resolve(): void {
+    this._resolve(true);
     if (this._isFinished == true) {
       return;
     }
@@ -54,17 +58,21 @@ export default class Script {
     if (this.isAsync) {
       this._response.send(this._body);
     }
-    this._resolve(true);
   }
 
   resolveAndSend(): void {
     if (this._isFinished == true) {
-      console.log('script.resolveAndSend: isFinished');
       return;
     }
     this._isFinished = true;
-    this._response.send(this._body);
+    this.send();
     this._resolve(true);
+  }
+
+  send(): void {
+    try {
+      this._response.send(this._body);
+    } catch (error) {}
   }
 
   setBody(body: string): Script {
@@ -106,15 +114,15 @@ export default class Script {
   promise(): Promise<boolean> {
     return new Promise((resolve, reject) => {
       if (this.isAsync) {
-        console.log('promise: isAsync = true');
         this._resolve = resolve;
         if (this._isFinished) {
-          console.log('promise: resolve now');
+          this.resolve();
+          this.send();
           resolve(true);
         }
       } else {
-        console.log('promise: isAsync = false');
         this.resolve();
+        this.send();
         resolve(true);
       }
     });

@@ -8,7 +8,7 @@ export default class Server {
     constructor(core: Core, configuration: Configuration);
     getPort(): number;
     start(): void;
-    beforeRequest(request: any, response: any, next: any): Promise<void>;
+    beforeRequest(request: any, response: any, next: any): Promise<boolean>;
     execute(nodeScriptFile: string, request: any, response: any): Promise<boolean>;
     handleRequest(request: any, response: any, next: any): void;
     afterRequest(request: any, response: any, next: any): void;

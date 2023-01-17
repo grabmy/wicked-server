@@ -1,43 +1,66 @@
-# 🧰 Simple TypeScript Starter | 2022
+# Wicked Node js server
 
-> We talk about a lot of **advanced Node.js and TypeScript** concepts on [the blog](https://khalilstemmler.com), particularly focused around Domain-Driven Design and large-scale enterprise application patterns. However, I received a few emails from readers that were interested in seeing what a basic TypeScript starter project looks like. So I've put together just that.
+## Scripts
 
-### Features
-
-- Minimal
-- TypeScript v4
-- Testing with Jest
-- Linting with Eslint and Prettier
-- Pre-commit hooks with Husky
-- VS Code debugger scripts
-- Local development with Nodemon
-
-### Scripts
-
-#### `npm run start:dev`
-
-Starts the application in development using `nodemon` and `ts-node` to do hot reloading.
-
-#### `npm run start`
-
-Starts the app in production by first building the project with `npm run build`, and then executing the compiled JavaScript at `build/index.js`.
-
-#### `npm run build`
+### `npm run build`
 
 Builds the app at `build`, cleaning the folder first.
 
-#### `npm run test`
+### `npm run test`
 
 Runs the `jest` tests once.
 
-#### `npm run test:dev`
+## TODO
 
-Run the `jest` tests in watch mode, waiting for file changes.
+- Add node.js extension to config
+- Add test with all main methods in methods.test.ts
+- Test standalone wicked command execution outside prject
+- Add test with modules (delete node_modules / execute command npm i / check existing and non existing modules)
+- Add executing script without request / response
+- Add access error log to Script
+- Add starting / stopping launch script
+- Add REST api test
+- Add https local certifcate
+- Disable list methods / mime types
+- Add plugin system (middleware, start, stop)
+- Use node-ts to execute .node.ts file
+- Add routes alias to script and test routes
+- Add node.ts extension to config
+- Add protected directory by password
+- JSON configuration example:
 
-#### `npm run prettier-format`
+```json
+{
+  "name": "default",
+  "port": 3000,
+  "public": "public/",
+  "script": {
+    "runAtStart": "script/start.node.js",
+    "runAtStop": "script/stop.node.js",
+    "extensionNode": "node.js",
+    "extensionNodeTs": "node.ts"
+  },
+  "routes": {
+    "/api/*": "script/api.node.js",
+    "/about": "script/about.node.js"
+  },
+  "log": {
+    "error": {
+      "enabled": true,
+      "target": "file",
+      "path": "log/error.log"
+    },
+    "access": {
+      "enabled": true,
+      "target": "file",
+      "path": "log/access.log"
+    }
+  }
+}
+```
 
-Format your code.
+## DONE
 
-#### `npm run prettier-watch`
+## Pending
 
-Format your code in watch mode, waiting for file changes.
+## Canceled

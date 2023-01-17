@@ -43,6 +43,7 @@ var express_1 = __importDefault(require("express"));
 var LogSystem_1 = __importDefault(require("./LogSystem"));
 var Tools_1 = __importDefault(require("./Tools"));
 var Script_1 = __importDefault(require("./Script"));
+var decache = require('decache');
 var Server = /** @class */ (function () {
     function Server(core, configuration) {
         var _a;
@@ -85,51 +86,41 @@ var Server = /** @class */ (function () {
     Server.prototype.beforeRequest = function (request, response, next) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var isNodeScript, stop, nodeScriptFile, error_1;
+            var isNodeScript, nodeScriptFile, error_1;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         isNodeScript = false;
+                        nodeScriptFile = this.configuration.public + request.url;
                         if (Tools_1.default.getUrlExtension(request.url) == 'node.js') {
-                            console.log('beforeRequest: isNodeScript');
                             isNodeScript = true;
                         }
                         response.on('finish', function () {
                             _this.afterRequest(request, response, next);
                         });
-                        if (!isNodeScript) return [3 /*break*/, 5];
-                        stop = false;
+                        if (!(isNodeScript && Tools_1.default.fileExists(nodeScriptFile))) return [3 /*break*/, 5];
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 3, , 4]);
-                        nodeScriptFile = this.configuration.public + request.url;
-                        console.log('beforeRequest: execute script ' + request.url);
                         return [4 /*yield*/, this.execute(nodeScriptFile, request, response)];
                     case 2:
-                        stop = _b.sent();
-                        console.log('beforeRequest: executed ' + request.url + ', stop = ' + stop);
+                        _b.sent();
                         return [3 /*break*/, 4];
                     case 3:
                         error_1 = _b.sent();
-                        console.log(error_1 + '');
                         (_a = this.core.logError) === null || _a === void 0 ? void 0 : _a.log(error_1 + '', 'error');
                         response.statusCode = 500;
+                        return [3 /*break*/, 4];
+                    case 4:
                         try {
                             response.send('');
                         }
                         catch (err) { }
-                        stop = true;
-                        return [3 /*break*/, 4];
-                    case 4:
-                        if (!stop) {
-                            next();
-                        }
-                        return [3 /*break*/, 6];
+                        _b.label = 5;
                     case 5:
                         next();
-                        _b.label = 6;
-                    case 6: return [2 /*return*/];
+                        return [2 /*return*/, true];
                 }
             });
         });
@@ -141,25 +132,34 @@ var Server = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         if (!Tools_1.default.fileExists(nodeScriptFile)) return [3 /*break*/, 3];
-                        pathAbsolute = require('path').resolve(nodeScriptFile);
+                        pathAbsolute = require('path').resolve('./' + nodeScriptFile);
+                        //const requirePathAbsolute = require.resolve(pathAbsolute);
+                        //const requirePathAbsolute2 = require.resolve('./' + nodeScriptFile);
+                        console.log(pathAbsolute + ' pathAbsolute = ' + typeof require.cache[pathAbsolute]);
+                        //console.log(requirePathAbsolute + ' requirePathAbsolute = ' + typeof require.cache[requirePathAbsolute]);
+                        //console.log(requirePathAbsolute2 + ' requirePathAbsolute2 = ' + typeof require.cache[requirePathAbsolute2]);
+                        //delete require.cache[pathAbsolute];
+                        //delete require.cache[requirePathAbsolute];
+                        //delete require.cache[requirePathAbsolute2];
+                        //require.cache[pathAbsolute] = undefined;
+                        //require.cache[requirePathAbsolute] = undefined;
+                        //require.cache[requirePathAbsolute2] = undefined;
+                        decache(pathAbsolute);
+                        //decache(requirePathAbsolute);
+                        //decache(requirePathAbsolute2);
+                        console.log(pathAbsolute + ' pathAbsolute = ' + typeof require.cache[pathAbsolute]);
                         scriptFct = require(pathAbsolute);
-                        scriptInstance = new Script_1.default(this, request, response);
+                        console.log(pathAbsolute + ' pathAbsolute = ' + typeof require.cache[pathAbsolute]);
+                        //console.log(requirePathAbsolute + ' requirePathAbsolute = ' + typeof require.cache[requirePathAbsolute]);
+                        //console.log(requirePathAbsolute2 + ' requirePathAbsolute2 = ' + typeof require.cache[requirePathAbsolute2]);
+                        console.log('--');
+                        scriptInstance = new Script_1.default(this, request, response, scriptFct);
                         return [4 /*yield*/, scriptFct(scriptInstance)];
                     case 1:
                         result = _a.sent();
-                        if (!scriptInstance.isFinished) {
-                            console.log('execute: isFinished = false');
-                            console.log('execute: resolveAndSend');
-                            scriptInstance.resolveAndSend();
-                        }
-                        else {
-                            console.log('execute: isFinished = true');
-                        }
                         return [4 /*yield*/, scriptInstance.promise()];
                     case 2:
                         promise = _a.sent();
-                        console.log('execute: promise complete');
-                        console.log(promise);
                         return [2 /*return*/, promise];
                     case 3: return [2 /*return*/, false];
                 }

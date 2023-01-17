@@ -4,6 +4,7 @@ import Configuration from './Configuration';
 import LogSystem from './LogSystem';
 import Tools from './Tools';
 import Script from './Script';
+const decache = require('decache');
 
 export default class Server {
   core: Core;
@@ -47,10 +48,10 @@ export default class Server {
     }
   }
 
-  async beforeRequest(request: any, response: any, next: any): Promise<void> {
+  async beforeRequest(request: any, response: any, next: any): Promise<boolean> {
     let isNodeScript = false;
+    const nodeScriptFile = this.configuration.public + request.url;
     if (Tools.getUrlExtension(request.url) == 'node.js') {
-      console.log('beforeRequest: isNodeScript');
       isNodeScript = true;
     }
 
@@ -58,47 +59,58 @@ export default class Server {
       this.afterRequest(request, response, next);
     });
 
-    if (isNodeScript) {
-      let stop = false;
+    if (isNodeScript && Tools.fileExists(nodeScriptFile)) {
       try {
-        const nodeScriptFile = this.configuration.public + request.url;
-        console.log('beforeRequest: execute script ' + request.url);
-        stop = await this.execute(nodeScriptFile, request, response);
-        console.log('beforeRequest: executed ' + request.url + ', stop = ' + stop);
+        await this.execute(nodeScriptFile, request, response);
       } catch (error) {
-        console.log(error + '');
         this.core.logError?.log(error + '', 'error');
         response.statusCode = 500;
-        try {
-          response.send('');
-        } catch (err) {}
-        stop = true;
       }
-      if (!stop) {
-        next();
-      }
-    } else {
-      next();
+      try {
+        response.send('');
+      } catch (err) {}
     }
+    next();
+
+    return true;
   }
 
   async execute(nodeScriptFile: string, request: any, response: any): Promise<boolean> {
     if (Tools.fileExists(nodeScriptFile)) {
-      const pathAbsolute = require('path').resolve(nodeScriptFile);
-      const scriptFct = require(pathAbsolute);
-      const scriptInstance = new Script(this, request, response);
-      const result = await scriptFct(scriptInstance);
+      const pathAbsolute = require('path').resolve('./' + nodeScriptFile);
+      //const requirePathAbsolute = require.resolve(pathAbsolute);
+      //const requirePathAbsolute2 = require.resolve('./' + nodeScriptFile);
 
-      if (!scriptInstance.isFinished) {
-        console.log('execute: isFinished = false');
-        console.log('execute: resolveAndSend');
-        scriptInstance.resolveAndSend();
-      } else {
-        console.log('execute: isFinished = true');
-      }
+      console.log(pathAbsolute + ' pathAbsolute = ' + typeof require.cache[pathAbsolute]);
+      //console.log(requirePathAbsolute + ' requirePathAbsolute = ' + typeof require.cache[requirePathAbsolute]);
+      //console.log(requirePathAbsolute2 + ' requirePathAbsolute2 = ' + typeof require.cache[requirePathAbsolute2]);
+
+      //delete require.cache[pathAbsolute];
+      //delete require.cache[requirePathAbsolute];
+      //delete require.cache[requirePathAbsolute2];
+
+      //require.cache[pathAbsolute] = undefined;
+      //require.cache[requirePathAbsolute] = undefined;
+      //require.cache[requirePathAbsolute2] = undefined;
+
+      decache(pathAbsolute);
+      //decache(requirePathAbsolute);
+      //decache(requirePathAbsolute2);
+
+      console.log(pathAbsolute + ' pathAbsolute = ' + typeof require.cache[pathAbsolute]);
+      //console.log(requirePathAbsolute + ' requirePathAbsolute = ' + typeof require.cache[requirePathAbsolute]);
+      //console.log(requirePathAbsolute2 + ' requirePathAbsolute2 = ' + typeof require.cache[requirePathAbsolute2]);
+
+      const scriptFct = require(pathAbsolute);
+
+      console.log(pathAbsolute + ' pathAbsolute = ' + typeof require.cache[pathAbsolute]);
+      //console.log(requirePathAbsolute + ' requirePathAbsolute = ' + typeof require.cache[requirePathAbsolute]);
+      //console.log(requirePathAbsolute2 + ' requirePathAbsolute2 = ' + typeof require.cache[requirePathAbsolute2]);
+
+      console.log('--');
+      const scriptInstance = new Script(this, request, response, scriptFct);
+      const result = await scriptFct(scriptInstance);
       const promise = await scriptInstance.promise();
-      console.log('execute: promise complete');
-      console.log(promise);
       return promise;
     }
     return false;

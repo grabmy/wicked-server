@@ -1,7 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+var Tools_1 = __importDefault(require("./Tools"));
 var Script = /** @class */ (function () {
-    function Script(core, request, response) {
+    function Script(core, request, response, scriptFct) {
         this._body = '';
         this._charset = '';
         this._contentType = '';
@@ -14,6 +18,7 @@ var Script = /** @class */ (function () {
         this._request = request;
         this._response = response;
         this._body = '';
+        this._isAsync = Tools_1.default.isAsync(scriptFct);
     }
     Object.defineProperty(Script.prototype, "request", {
         get: function () {
@@ -57,10 +62,11 @@ var Script = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
-    Script.prototype.async = function () {
-        this._isAsync = true;
+    Script.prototype.async = function (async) {
+        this._isAsync = async;
     };
     Script.prototype.resolve = function () {
+        this._resolve(true);
         if (this._isFinished == true) {
             return;
         }
@@ -68,16 +74,20 @@ var Script = /** @class */ (function () {
         if (this.isAsync) {
             this._response.send(this._body);
         }
-        this._resolve(true);
     };
     Script.prototype.resolveAndSend = function () {
         if (this._isFinished == true) {
-            console.log('script.resolveAndSend: isFinished');
             return;
         }
         this._isFinished = true;
-        this._response.send(this._body);
+        this.send();
         this._resolve(true);
+    };
+    Script.prototype.send = function () {
+        try {
+            this._response.send(this._body);
+        }
+        catch (error) { }
     };
     Script.prototype.setBody = function (body) {
         this._body = body;
@@ -114,16 +124,16 @@ var Script = /** @class */ (function () {
         var _this = this;
         return new Promise(function (resolve, reject) {
             if (_this.isAsync) {
-                console.log('promise: isAsync = true');
                 _this._resolve = resolve;
                 if (_this._isFinished) {
-                    console.log('promise: resolve now');
+                    _this.resolve();
+                    _this.send();
                     resolve(true);
                 }
             }
             else {
-                console.log('promise: isAsync = false');
                 _this.resolve();
+                _this.send();
                 resolve(true);
             }
         });
